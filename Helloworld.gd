@@ -8,21 +8,18 @@ func _init():
 	
 	var config = ConfigFile.new()
 	
-	if config.load(OS.get_executable_path().get_base_dir() + "/settings.cfg") == OK:
-		print(database.connect_to_host(config.get_value("database", "url", "")))
-	else:
-		push_error("Impossible de se connecter a la base de donnée")
+	var _error = database.connect_to_host("postgresql://user:passworld@127.0.0.1:5432/database_name")
 
-func _executer():
-	database.execute("""
+func _executer() -> void:
+	var data = database.execute("""
 		BEGIN;
-    /*Table des utilisateurs*/
-    SELECT concat('Hello', 'World');
+		/*Helloworld*/
+		SELECT concat('Hello', 'World');
 		COMMIT;
 	""")
-	
-	print(datas)
-	
+
+	print(data)
+
 	database.close()
 
 
