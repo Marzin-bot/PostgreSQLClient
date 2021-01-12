@@ -6,9 +6,9 @@ func _init():
 	database.connect("connection_established", self, "_executer")
 	database.connect("connection_closed", self, "_close")
 	
-	var config = ConfigFile.new()
-	
+	#Connection to the database
 	var _error = database.connect_to_host("postgresql://user:passworld@127.0.0.1:5432/database_name")
+
 
 func _executer() -> void:
 	var data = database.execute("""
@@ -18,6 +18,7 @@ func _executer() -> void:
 		COMMIT;
 	""")
 
+	# note: the "BEGIN" and "COMMIT" commands return empty values
 	print(data)
 
 	database.close()
