@@ -7,7 +7,7 @@ func _init():
 	database.connect("connection_closed", self, "_close")
 	
 	#Connection to the database
-	var _error = database.connect_to_host("postgresql://user:passworld@127.0.0.1:5432/database_name")
+	var _error = database.connect_to_host("postgresql://user:passworld@localhost:5432/database_name")
 
 
 func _executer() -> void:
