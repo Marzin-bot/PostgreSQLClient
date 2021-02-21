@@ -383,11 +383,19 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									
 									close(false)
 									return
-							"PoolByteArray":
+							17:
 								### BITEA ###
 								
 								# The type returned is PoolByteArray.
-								row.append(value_data)
+								var bitea_data = value_data.get_string_from_ascii()
+								
+								var bitea := PoolByteArray()
+								
+								for i_hex in value_data.size() * 0.5 - 1:
+									bitea.append(("0x" + bitea_data[i_hex+2] + bitea_data[i_hex+2]).hex_to_int())
+								
+								# The result.
+								row.append(bitea)
 							600:
 								### POINT ###
 								
