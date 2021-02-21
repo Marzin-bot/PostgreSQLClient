@@ -8,7 +8,7 @@ var parameter_status := {}
 ## protocol_version
 const PROTOCOL_VERSION := 3.0
 
-#pas utilisé
+#not using
 var is_connected_to_host := false
 
 #determine si "autentifier" au près du server
@@ -30,11 +30,19 @@ signal connection_closed(was_clean_close)
 signal connection_error
 signal connection_established
 
-# True quand le serveur est pret a resevoir de nouveau data.
 
+# True quand le serveur est pret a resevoir de nouveau data.
 var rep = true
 
-#se connecte a une base de donnée postgreSQL a l'url spésifier.
+
+#####################No using for moment###############
+## L'ID de processus de ce backend
+var process_backend_id: int
+
+## La clé secrète de ce backend
+var process_backend_secret_key: int
+
+#Se connecte a une base de donnée postgreSQL a l'url spésifier.
 func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var error := 1
 	
@@ -50,7 +58,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 	
 	if result:
 		### StartupMessage ###
-		var startup_message = request(null, "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
+		var startup_message = request("", "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
 		
 		password_global = result.strings[2]
 		user_global = result.strings[1]
@@ -132,9 +140,36 @@ func execute(sql: String) -> Array:
 	
 	return []
 
+
+## Cette function annule toutes les modifications apportées à la base de données depuis le dernier Commit
+func rollback(process_id: int, process_key: int):
+	### CancelRequest ###
+	
+	if authentication:
+		var buffer := StreamPeerBuffer.new()
+		
+		# Length of message contents in bytes, including self.
+		buffer.put_32(16)
+		
+		var message_length := buffer.data_array
+		
+		message_length.invert()
+		
+		buffer.put_data(message_length)
+		
+		# The cancel request code. The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+		buffer.put_u32(80877102)
+		# The process ID of the target backend.
+		buffer.put_32(process_id)
+		# The secret key for the target backend.
+		buffer.put_32(process_key)
+		
+		peer.put_data(buffer.data_array.subarray(4, -1))
+
+
 var valide = false
 
-func request(type_message, message := PoolByteArray()) -> PoolByteArray:
+func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
 	var buffer := StreamPeerBuffer.new()
 	
@@ -194,7 +229,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 		buffer.seek(0)
 		
 		# longeur du message
-		var message_length = buffer.get_32()
+		var message_length = buffer.get_u32()
 		
 		if reponce.size() < message_length + 1:
 			print("Trop petit")
@@ -477,25 +512,25 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				# Identifies the message as cancellation key data. The frontend must save these values if it wishes to be able to issue CancelRequest messages later.
 				
 				# Get the process ID of this backend.
-				var process_id = reponce.subarray(5, 8)
-				process_id.invert()
+				var process_backend_id = reponce.subarray(5, 8)
+				process_backend_id.invert()
 				
-				buffer.put_data(process_id)
+				buffer.put_data(process_backend_id)
 				buffer.seek(4)
 				
-				process_id = buffer.get_32()
+				process_backend_id = buffer.get_u32()
 				
 				# Get the secret key of this backend.
-				var secret_key = reponce.subarray(9, message_length)
-				secret_key.invert()
+				var process_backend_secret_key = reponce.subarray(9, message_length)
+				process_backend_secret_key.invert()
 				
-				buffer.put_data(secret_key)
+				buffer.put_data(process_backend_secret_key)
 				buffer.seek(8)
 				
-				secret_key = buffer.get_32()
+				process_backend_secret_key = buffer.get_u32()
 				
 				# The result.
-				prints(process_id, secret_key)
+				prints(process_backend_id, process_backend_secret_key)
 			'R':
 				### Authentication ###
 				
