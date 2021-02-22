@@ -27,6 +27,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
+| `void` | set_ssl_connection() |
 
 **SIGNALS:**
 
