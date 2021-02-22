@@ -22,7 +22,7 @@ var peerstream := PacketPeerStream.new()
 #var ssl = StreamPeerSSL.new()
 
 var peer
-func _init():
+func _init() -> void:
 	peerstream.set_stream_peer(client)
 	peer = peerstream.stream_peer
 
@@ -42,7 +42,7 @@ var process_backend_id: int
 ## La clé secrète de ce backend
 var process_backend_secret_key: int
 
-#Se connecte a une base de donnée postgreSQL a l'url spésifier.
+## Se connecte a une base de donnée postgreSQL a l'url spésifier.
 func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var error := 1
 	
@@ -99,7 +99,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 	return error
 
 ## Close the connexion to host.
-func close(clean_closure := true):
+func close(clean_closure := true) -> void:
 	if authentication:
 		if clean_closure:
 			### Terminate ###
@@ -142,7 +142,7 @@ func execute(sql: String) -> Array:
 
 
 ## Cette function annule toutes les modifications apportées à la base de données depuis le dernier Commit
-func rollback(process_id: int, process_key: int):
+func rollback(process_id: int, process_key: int) -> void:
 	### CancelRequest ###
 	
 	if authentication:
@@ -165,7 +165,8 @@ func rollback(process_id: int, process_key: int):
 		buffer.put_32(process_key)
 		
 		peer.put_data(buffer.data_array.subarray(4, -1))
-
+	else:
+		push_error("The frontend is not connected to backend.")
 
 var valide = false
 
@@ -389,13 +390,19 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								# The type returned is PoolByteArray.
 								var bitea_data = value_data.get_string_from_ascii()
 								
-								var bitea := PoolByteArray()
-								
-								for i_hex in value_data.size() * 0.5 - 1:
-									bitea.append(("0x" + bitea_data[i_hex+2] + bitea_data[i_hex+2]).hex_to_int())
-								
-								# The result.
-								row.append(bitea)
+								if bitea_data.substr(2).is_valid_hex_number():
+									var bitea := PoolByteArray()
+									
+									for i_hex in value_data.size() * 0.5 - 1:
+										bitea.append(("0x" + bitea_data[i_hex+2] + bitea_data[i_hex+2]).hex_to_int())
+									
+									# The result.
+									row.append(bitea)
+								else:
+									push_error("(PostgreSQLClient) The backend sent an invalid BITEA object.")
+									
+									close(false)
+									return
 							600:
 								### POINT ###
 								
@@ -441,11 +448,50 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									
 									close(false)
 									return
-							"PoolVector2Array":
-								### _ ###
+							"lseg":
+								### LSEG ###
 								
 								# The type returned is PoolVector2Array.
-								pass
+								row.append(PoolVector2Array())
+							"polygon":
+								### POLYGON ###
+								
+								# The type returned is PoolVector2Array.
+								row.append(PoolVector2Array())
+							"path":
+								### PATH ###
+								
+								# The type returned is PoolVector2Array.
+								row.append(PoolVector2Array())
+							"line":
+								### LINE ###
+								
+								# The type returned is Vector3.
+								row.append(Vector3())
+							718:
+								### CIRCLE ###
+								
+								# The type returned is Vector3.
+								
+								#row.append(value_data.get_string_from_ascii())
+								var regex = RegEx.new()
+								
+								error = regex.compile("^<\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),(\\d+(?:\\.\\d+)?)>")
+								if error:
+									push_error("(PostgreSQLClient) RegEx compilation of CIRCLE object failed. (Error: %d)" % [error])
+									
+									close(false)
+									return
+									
+								var result = regex.search(value_data.get_string_from_ascii())
+								if result:
+									# The result.
+									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
+								else:
+									push_error("(PostgreSQLClient) The backend sent an invalid CIRCLE object.")
+									
+									close(false)
+									return
 							_:
 								# The type returned is PoolByteArray.
 								row.append(value_data)
@@ -698,7 +744,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 					data_type_size = buffer.get_16()
 					
 					# Get the type modifier.
-					#The meaning of the modifier is type-specific.
+					# The meaning of the modifier is type-specific.
 					var type_modifier = reponce.subarray(cursor + 13, cursor + 16)
 					type_modifier.invert()
 					
