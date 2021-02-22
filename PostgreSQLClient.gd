@@ -8,10 +8,10 @@ var parameter_status := {}
 ## protocol_version
 const PROTOCOL_VERSION := 3.0
 
-#not using
+# not using
 var is_connected_to_host := false
 
-#determine si "autentifier" au près du server
+# determine si "autentifier" au près du server
 var authentication := false
 
 var password_global: String
@@ -63,12 +63,12 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 		password_global = result.strings[2]
 		user_global = result.strings[1]
 		
-		# port par défaut de postgresql
+		# The default port for postgresql.
 		var port = 5432
 		
 		if result.strings[4]:
 			port = int(result.strings[4])
-			
+		
 		error = client.connect_to_host(result.strings[3], port)
 		
 		# ssl.connect_to_stream(peer)
@@ -159,8 +159,10 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		# The cancel request code. The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
 		buffer.put_u32(80877102)
+		
 		# The process ID of the target backend.
 		buffer.put_32(process_id)
+		
 		# The secret key for the target backend.
 		buffer.put_32(process_key)
 		
@@ -288,8 +290,8 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				
 				number_of_columns = buffer.get_16()
 				
-				var cursor = 0
-				var row = []
+				var cursor := 0
+				var row := []
 				
 				for i in number_of_columns:
 					var value_length = reponce.subarray(cursor + 7, cursor + 10)
@@ -355,6 +357,10 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								# The type returned is PoolStringArray.
 								pass
+							"tsvector":
+								pass
+							"tsquery":
+								pass
 							"XML":
 								### XML ###
 								
@@ -384,9 +390,12 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									
 									close(false)
 									return
+							"Bit":
+								### BIT ###
+								pass
 							17:
 								### BITEA ###
-								
+								################################# support no complet ##############################
 								# The type returned is PoolByteArray.
 								var bitea_data = value_data.get_string_from_ascii()
 								
@@ -403,6 +412,21 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									
 									close(false)
 									return
+							"UUID":
+								### UUID ###
+								pass
+							"cidr":
+								### CIDR ###
+								pass
+							"inet":
+								### INET ###
+								pass
+							"macaddr":
+								### MACADDR ###
+								pass
+							"macaddr8":
+								### MACADDR8 ###
+								pass
 							600:
 								### POINT ###
 								
@@ -448,11 +472,28 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									
 									close(false)
 									return
-							"lseg":
+							601:
 								### LSEG ###
 								
 								# The type returned is PoolVector2Array.
-								row.append(PoolVector2Array())
+								var regex = RegEx.new()
+								
+								error = regex.compile("^\\[\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\)\\]")
+								if error:
+									push_error("(PostgreSQLClient) RegEx compilation of LSEG object failed. (Error: %d)" % [error])
+									
+									close(false)
+									return
+								
+								var result = regex.search(value_data.get_string_from_ascii())
+								if result:
+									# The result.
+									row.append(PoolVector2Array([Vector2(float(result.strings[1]), float(result.strings[2])), Vector2(float(result.strings[3]), float(result.strings[4]))]))
+								else:
+									push_error("(PostgreSQLClient) The backend sent an invalid LSEG object.")
+									
+									close(false)
+									return
 							"polygon":
 								### POLYGON ###
 								
@@ -463,11 +504,29 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								# The type returned is PoolVector2Array.
 								row.append(PoolVector2Array())
-							"line":
+							628:
 								### LINE ###
 								
 								# The type returned is Vector3.
-								row.append(Vector3())
+								var regex = RegEx.new()
+								
+								error = regex.compile("^\\{(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\}")
+								if error:
+									push_error("(PostgreSQLClient) RegEx compilation of LINE object failed. (Error: %d)" % [error])
+									
+									close(false)
+									return
+								
+								var result = regex.search(value_data.get_string_from_ascii())
+								
+								if result:
+									# The result.
+									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
+								else:
+									push_error("(PostgreSQLClient) The backend sent an invalid LINE object.")
+									
+									close(false)
+									return
 							718:
 								### CIRCLE ###
 								
@@ -476,7 +535,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								#row.append(value_data.get_string_from_ascii())
 								var regex = RegEx.new()
 								
-								error = regex.compile("^<\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),(\\d+(?:\\.\\d+)?)>")
+								error = regex.compile("^<\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),(\\d+(\\.\\d+)?)>")
 								if error:
 									push_error("(PostgreSQLClient) RegEx compilation of CIRCLE object failed. (Error: %d)" % [error])
 									
@@ -688,7 +747,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				number_of_value = buffer.get_16()
 				
 				# Then, for each field...
-				var cursor = 6
+				var cursor := 6
 				for _i in number_of_value:
 					# Get the field name.
 					var name_field := ""
@@ -844,7 +903,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				
 				# Then, for each parameter, there is the following:
 				var data_types = []
-				var cursor = 7
+				var cursor := 7
 				for i in number_of_parameters:
 					# Get the object ID of the parameter data type.
 					var object_id = reponce.subarray(cursor, cursor + 4)
@@ -861,7 +920,34 @@ func reponce_interpretation(reponcee: PoolByteArray):
 			'v':
 				### NegotiateProtocolVersion ###
 				
-				print("NegotiateProtocolVersion no implemented.")
+				# Identifies the message as a protocol version negotiation message.
+				
+				# Get newest minor protocol version supported by the server for the major protocol version requested by the client.
+				var minor_protocol_version = reponce.subarray(5, 8)
+				minor_protocol_version.invert()
+				
+				buffer.put_data(minor_protocol_version)
+				buffer.seek(4)
+				
+				minor_protocol_version = buffer.get_u32()
+				
+				# Get the number of protocol options not recognized by the server.
+				var number_of_options = reponce.subarray(9, 13)
+				number_of_options.invert()
+				
+				buffer.put_data(number_of_options)
+				buffer.seek(8)
+				
+				number_of_options = buffer.get_u32()
+				
+				# Then, for each protocol option not recognized by the server...
+				var cursor := 0
+				for _i in number_of_options:
+					# Get the option name.
+					pass
+				
+				# The result.
+				prints(minor_protocol_version)
 			'1':
 				### ParseComplete ###
 				
@@ -871,13 +957,11 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				### BindComplete ###
 				
 				# Identifies the message as a Bind-complete indicator.
-				
 				print("BindComplete")
 			'3':
 				### CloseComplete ###
 				
 				# Identifies the message as a Close-complete indicator.
-				
 				print("CloseComplete")
 			var message_type:
 				# We close the connection with the backend if the type of message is not recognized.
