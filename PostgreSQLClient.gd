@@ -42,6 +42,10 @@ var process_backend_id: int
 ## La clé secrète de ce backend
 var process_backend_secret_key: int
 
+
+#test ssl
+var ssl = false
+
 ## Se connecte a une base de donnée postgreSQL a l'url spésifier.
 func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var error := 1
@@ -57,6 +61,10 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var result = regex.search(url)
 	
 	if result:
+		if ssl:
+			### SSLRequest ###
+			set_ssl_connection()
+		
 		### StartupMessage ###
 		var startup_message = request("", "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
 		
@@ -73,7 +81,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 		
 		# ssl.connect_to_stream(peer)
 		
-		while error == OK:
+		while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and error == OK:
 			if client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 				# Get the fist message of server.
 				if rep:
@@ -98,6 +106,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 	
 	return error
 
+
 ## Close the connexion to host.
 func close(clean_closure := true) -> void:
 	if authentication:
@@ -119,26 +128,46 @@ func execute(sql: String) -> Array:
 	if authentication:
 		peer.put_data(request('Q', sql.to_utf8() + PoolByteArray([0])))
 		
-		while true:
-			if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-				if client.is_connected_to_host():
-					# ssl.poll()
+		while client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			if client.is_connected_to_host():
+				# ssl.poll()
+				
+				var reponce = peer.get_data(peer.get_available_bytes())
+				
+				if reponce[0] == OK and reponce[1].size():
 					
-					var reponce = peer.get_data(peer.get_available_bytes())
-					
-					if reponce[0] == OK and reponce[1].size():
-						
-						var result = reponce_interpretation(reponce[1])
-						if result != null:
-							return result
-					
-				else:
-					print("déconnecter")
-					break
+					var result = reponce_interpretation(reponce[1])
+					if result != null:
+						return result
+				
+			else:
+				print("déconnecter")
+				break
 	else:
 		push_error("The frontend is not connected to backend.")
 	
 	return []
+
+
+## Active SSL
+func set_ssl_connection():
+	### SSLRequest ###
+	var buffer := StreamPeerBuffer.new()
+	
+	# Length of message contents in bytes, including self.
+	buffer.put_32(8)
+	
+	var message_length := buffer.data_array
+	
+	message_length.invert()
+	
+	buffer.put_data(message_length)
+	
+	# The SSL request code.
+	# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+	buffer.put_u32(80877103)
+	
+	peer.put_data(buffer.data_array.subarray(4, -1))
 
 
 ## Cette function annule toutes les modifications apportées à la base de données depuis le dernier Commit
@@ -157,7 +186,8 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		buffer.put_data(message_length)
 		
-		# The cancel request code. The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+		# The cancel request code.
+		# The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
 		buffer.put_u32(80877102)
 		
 		# The process ID of the target backend.
@@ -169,6 +199,7 @@ func rollback(process_id: int, process_key: int) -> void:
 		peer.put_data(buffer.data_array.subarray(4, -1))
 	else:
 		push_error("The frontend is not connected to backend.")
+
 
 var valide = false
 
@@ -222,7 +253,7 @@ var reponce: PoolByteArray
 func reponce_interpretation(reponcee: PoolByteArray):
 	reponce += reponcee
 	
-	while reponce.size() > 4:
+	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and reponce.size() > 4:
 		# Get the length of the response
 		var longeur_data = reponce.subarray(1, 4)
 		longeur_data.invert()
@@ -717,7 +748,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 						print("AuthenticationSASLFinal")
 						close(false)
 					_:
-						print("code d'autenfication inconnu")
+						push_error("Code d'autenfication inconnu")
 						
 						close(false)
 			'S':
