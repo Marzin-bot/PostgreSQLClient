@@ -1,8 +1,8 @@
 extends Node
 
-var database = PostgreSQLClient.new()
+var database := PostgreSQLClient.new()
 
-func _init():
+func _init() -> void:
 	database.connect("connection_established", self, "_executer")
 	database.connect("connection_closed", self, "_close")
 	
@@ -28,5 +28,5 @@ func _close(clean_closure := true) -> void:
 	prints("BD CLOSE", clean_closure)
 
 
-func _exit_tree():
+func _exit_tree() -> void:
 	database.close()
