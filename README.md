@@ -10,9 +10,24 @@ It is assumed that you have installed the latest version of PostgreSQL and that 
 CLASS DOCUMENTATION (NOT FINALIZED):
 ====================================
 
+**PROPERTIES:**
+
+| Type | Properties | Default value |
+| --- | --- |
+| `float` | PROTOCOL_VERSION *const* | 3.0 |
+
+
+**METHODS:**
+
 | Type | Method |
 | --- | --- |
 | `Error` | connect_to_host(url: String, connect_timeout: int = 30) |
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
+
+**SIGNALS:**
+
+connection_closed(was_clean_close)
+connection_error()
+connection_established()
