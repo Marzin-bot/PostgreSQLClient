@@ -28,6 +28,8 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 
 **SIGNALS:**
 
-connection_closed(was_clean_close)\n
-connection_error()\n
-connection_established()
+| Signal |
+| --- |
+| connection_closed(was_clean_close: bool) |
+| connection_error() |
+| connection_established() |
