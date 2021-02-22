@@ -13,7 +13,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 **PROPERTIES:**
 
 | Type | Properties | Default value |
-| --- | --- |
+| --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
 
 
@@ -28,6 +28,6 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 
 **SIGNALS:**
 
-connection_closed(was_clean_close)
-connection_error()
+connection_closed(was_clean_close)\n
+connection_error()\n
 connection_established()
