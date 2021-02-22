@@ -7,11 +7,11 @@ func _init() -> void:
 	database.connect("connection_closed", self, "_close")
 	
 	#Connection to the database
-	var _error = database.connect_to_host("postgresql://user:passworld@localhost:5432/database_name")
+	var _error := database.connect_to_host("postgresql://user:passworld@localhost:5432/database_name")
 
 
 func _executer() -> void:
-	var data = database.execute("""
+	var data := database.execute("""
 		BEGIN;
 		/*Helloworld*/
 		SELECT concat('Hello', 'World');
