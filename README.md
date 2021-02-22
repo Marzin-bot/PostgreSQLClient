@@ -11,7 +11,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 ====================================
 
 | Type | Method |
-| --- | --- | --- |
+| --- | --- |
 | `int` | connect_to_host(url: String, connect_timeout: int = 30) |
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
