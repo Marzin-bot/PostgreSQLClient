@@ -26,3 +26,7 @@ func _executer() -> void:
 
 func _close(clean_closure := true) -> void:
 	prints("BD CLOSE", clean_closure)
+
+
+func _exit_tree():
+	database.close()
