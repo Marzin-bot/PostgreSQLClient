@@ -33,3 +33,12 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | connection_closed(was_clean_close: bool) |
 | connection_error() |
 | connection_established() |
+
+**Property Descriptions**
+not finalized
+
+**Method Descriptions**
+not finalized
+
+**Signal Descriptions**
+not finalized
