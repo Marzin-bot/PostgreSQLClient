@@ -11,7 +11,7 @@ const PROTOCOL_VERSION := 3.0
 # not using
 var is_connected_to_host := false
 
-# determine si "autentifier" au près du server
+# détermine si on est authentifié auprès du serveur
 var authentication := false
 
 var password_global: String
@@ -31,11 +31,11 @@ signal connection_error
 signal connection_established
 
 
-# True quand le serveur est pret a resevoir de nouveau data.
+# True quand le serveur est prêt réservoir de nouvelles données.
 var rep = true
 
 
-#####################No using for moment###############
+#####################No use at the moment###############
 ## L'ID de processus de ce backend
 var process_backend_id: int
 
@@ -46,11 +46,11 @@ var process_backend_secret_key: int
 #test ssl
 var ssl = false
 
-## Se connecte a une base de donnée postgreSQL a l'url spésifier.
+## Connects to a postgreSQL database at the specified url.
 func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var error := 1
 	
-	# si le fontend étai déjà connecter au backend on le déconnecte avant de se reconnecter.
+	# si le frontend était déjà connecté au backend, nous le déconnectons avant de se reconnecter.
 	if authentication:
 		close()
 	
@@ -96,7 +96,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 					if !authentication:
 						peer.put_data(servire)
 					else:
-						# Une fois connecter on supprime le mot de pass de la base de donnée et le nom d'utilisateur pour des raison de sécurité.
+						# Une fois connecté, supprime le mot de passe et le nom d'utilisateur de la base de données pour des raisons de sécurité.
 						password_global = ""
 						user_global = ""
 						
@@ -120,7 +120,7 @@ func close(clean_closure := true) -> void:
 		
 		emit_signal("connection_closed", clean_closure)
 	else:
-		push_warning("Le fontend étai déjà déconnecter du frontend au moment de l'appel de close().")
+		push_warning("La frontend était déjà déconnectée du backend lorsque close() a été appelé.")
 
 
 ## Execute un script SQL et renvoi le résultat des commands du script en question.
