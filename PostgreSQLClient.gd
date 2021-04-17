@@ -11,7 +11,7 @@ const PROTOCOL_VERSION := 3.0
 # not using
 var is_connected_to_host := false
 
-# détermine si on est authentifié auprès du serveur
+# determine si "autentifier" au près du server
 var authentication := false
 
 var password_global: String
@@ -23,6 +23,8 @@ var peerstream := PacketPeerStream.new()
 
 var peer
 func _init() -> void:
+	#client.connect("connection_closed", self, "_executer")
+	
 	peerstream.set_stream_peer(client)
 	peer = peerstream.stream_peer
 
@@ -31,11 +33,10 @@ signal connection_error
 signal connection_established
 
 
-# True quand le serveur est prêt réservoir de nouvelles données.
+# True quand le serveur est pret a resevoir de nouveau data.
 var rep = true
 
-
-#####################No use at the moment###############
+#####################No using for moment###############
 ## L'ID de processus de ce backend
 var process_backend_id: int
 
@@ -46,11 +47,11 @@ var process_backend_secret_key: int
 #test ssl
 var ssl = false
 
-## Connects to a postgreSQL database at the specified url.
+## Se connecte a une base de donnée postgreSQL a l'url spésifier.
 func connect_to_host(url: String, connect_timeout := 30) -> int:
 	var error := 1
 	
-	# si le frontend était déjà connecté au backend, nous le déconnectons avant de se reconnecter.
+	# si le fontend étai déjà connecter au backend on le déconnecte avant de se reconnecter.
 	if authentication:
 		close()
 	
@@ -96,7 +97,7 @@ func connect_to_host(url: String, connect_timeout := 30) -> int:
 					if !authentication:
 						peer.put_data(servire)
 					else:
-						# Une fois connecté, supprime le mot de passe et le nom d'utilisateur de la base de données pour des raisons de sécurité.
+						# Une fois connecter on supprime le mot de pass de la base de donnée et le nom d'utilisateur pour des raison de sécurité.
 						password_global = ""
 						user_global = ""
 						
@@ -120,7 +121,7 @@ func close(clean_closure := true) -> void:
 		
 		emit_signal("connection_closed", clean_closure)
 	else:
-		push_warning("La frontend était déjà déconnectée du backend lorsque close() a été appelé.")
+		push_warning("[PostgreSQLClient:%d] Le fontend étai déjà déconnecter du frontend au moment de l'appel de close()." % [get_instance_id()])
 
 
 ## Execute un script SQL et renvoi le résultat des commands du script en question.
@@ -144,7 +145,7 @@ func execute(sql: String) -> Array:
 				print("déconnecter")
 				break
 	else:
-		push_error("The frontend is not connected to backend.")
+		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 	
 	return []
 
@@ -152,10 +153,11 @@ func execute(sql: String) -> Array:
 ## Active SSL
 func set_ssl_connection():
 	### SSLRequest ###
+	
 	var buffer := StreamPeerBuffer.new()
 	
 	# Length of message contents in bytes, including self.
-	buffer.put_32(8)
+	buffer.put_u32(8)
 	
 	var message_length := buffer.data_array
 	
@@ -165,7 +167,8 @@ func set_ssl_connection():
 	
 	# The SSL request code.
 	# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-	buffer.put_u32(80877103)
+	buffer.put_u32(12345679)
+	
 	
 	peer.put_data(buffer.data_array.subarray(4, -1))
 
@@ -178,7 +181,7 @@ func rollback(process_id: int, process_key: int) -> void:
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
-		buffer.put_32(16)
+		buffer.put_u32(16)
 		
 		var message_length := buffer.data_array
 		
@@ -188,17 +191,17 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		# The cancel request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_u32(80877102)
+		buffer.put_u32(12345678)
 		
 		# The process ID of the target backend.
-		buffer.put_32(process_id)
+		buffer.put_u32(process_id)
 		
 		# The secret key for the target backend.
-		buffer.put_32(process_key)
+		buffer.put_u32(process_key)
 		
 		peer.put_data(buffer.data_array.subarray(4, -1))
 	else:
-		push_error("The frontend is not connected to backend.")
+		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
 
 var valide = false
@@ -207,7 +210,7 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
 	var buffer := StreamPeerBuffer.new()
 	
-	buffer.put_32(message.size() + (4 if type_message else 8))
+	buffer.put_u32(message.size() + (4 if type_message else 8))
 	
 	var message_length := buffer.data_array
 	
@@ -242,6 +245,7 @@ func get_32bit_invert(integer: int) -> PoolByteArray:
 	bit.invert()
 	
 	return bit
+
 
 var datas_command_sql = []
 var datas = []
@@ -362,7 +366,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 										# The result.
 										row.append(false)
 									var value_column:
-										push_error("(PostgreSQLClient) The backend sent an invalid BOOLEAN object. Column value is not recognized: " + value_column)
+										push_error("[PostgreSQLClient:%d] The backend sent an invalid BOOLEAN object. Column value is not recognized: '%c'." % [get_instance_id(), value_column])
 										
 										close(false)
 							21, 23, 20:
@@ -403,7 +407,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(xml)
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid XML object. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid XML object. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -413,14 +417,14 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								# The type returned is JSONParseResult.
 								var json = JSON.parse(value_data.get_string_from_utf8())
 								
-								if not json.error_string:
-									# The result.
-									row.append(json)
-								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid JSON/JSONB object: %s (Error line: %d)" % [json.error_string, json.error_line])
+								if json.error_string:
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSON/JSONB object: %s (Error line: %d)" % [get_instance_id(), json.error_string, json.error_line])
 									
 									close(false)
 									return
+								else:
+									# The result.
+									row.append(json)
 							"Bit":
 								### BIT ###
 								pass
@@ -428,7 +432,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								### BITEA ###
 								################################# support no complet ##############################
 								# The type returned is PoolByteArray.
-								var bitea_data = value_data.get_string_from_ascii()
+								var bitea_data := value_data.get_string_from_ascii()
 								
 								if bitea_data.substr(2).is_valid_hex_number():
 									var bitea := PoolByteArray()
@@ -439,10 +443,19 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(bitea)
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid BITEA object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid BITEA object." % [get_instance_id()])
 									
 									close(false)
 									return
+							"timestamp":
+								### TIMESTAMP ###
+								pass
+							"date":
+								### DATE ###
+								pass
+							"interval":
+								### INTERVAL ###
+								pass
 							"UUID":
 								### UUID ###
 								pass
@@ -466,7 +479,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								error = regex.compile("^\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\)")
 								if error:
-									push_error("(PostgreSQLClient) RegEx compilation of POINT object failed. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] RegEx compilation of POINT object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -477,7 +490,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(Vector2(float(result.strings[1]), float(result.strings[2])))
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid POINT object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid POINT object." % [get_instance_id()])
 									
 									close(false)
 									return
@@ -489,7 +502,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								error = regex.compile("^\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\)")
 								if error:
-									push_error("(PostgreSQLClient) RegEx compilation of BOX object failed. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] RegEx compilation of BOX object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -499,7 +512,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(Rect2(float(result.strings[3]), float(result.strings[4]), float(result.strings[1]), float(result.strings[2])))
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid BOX object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid BOX object." % [get_instance_id()])
 									
 									close(false)
 									return
@@ -511,7 +524,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								error = regex.compile("^\\[\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\)\\]")
 								if error:
-									push_error("(PostgreSQLClient) RegEx compilation of LSEG object failed. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] RegEx compilation of LSEG object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -521,7 +534,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(PoolVector2Array([Vector2(float(result.strings[1]), float(result.strings[2])), Vector2(float(result.strings[3]), float(result.strings[4]))]))
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid LSEG object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid LSEG object." % [get_instance_id()])
 									
 									close(false)
 									return
@@ -543,7 +556,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								error = regex.compile("^\\{(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\}")
 								if error:
-									push_error("(PostgreSQLClient) RegEx compilation of LINE object failed. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] RegEx compilation of LINE object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -554,7 +567,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid LINE object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid LINE object." % [get_instance_id()])
 									
 									close(false)
 									return
@@ -568,7 +581,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 								
 								error = regex.compile("^<\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),(\\d+(\\.\\d+)?)>")
 								if error:
-									push_error("(PostgreSQLClient) RegEx compilation of CIRCLE object failed. (Error: %d)" % [error])
+									push_error("[PostgreSQLClient:%d] RegEx compilation of CIRCLE object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
 									return
@@ -578,7 +591,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 									# The result.
 									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
 								else:
-									push_error("(PostgreSQLClient) The backend sent an invalid CIRCLE object.")
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid CIRCLE object." % [get_instance_id()])
 									
 									close(false)
 									return
@@ -607,6 +620,11 @@ func reponce_interpretation(reponcee: PoolByteArray):
 					
 					match field_type_id:
 						'S':
+							if value == "FATAL":
+								authentication = false
+								
+								emit_signal("connection_closed", true)
+							
 							prints("Severity:", value)
 						'V':
 							prints("Severity no localized:", value)
@@ -614,7 +632,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 							prints("SQLSTATE code:", value)
 						'M':
 							prints("Message:", value)
-							push_error("(PostgreSQLClient) " + value)
+							push_error("[PostgreSQLClient:%d] %s" % [get_instance_id(), value])
 						'D':
 							prints("Detail:", value)
 						'H':
@@ -748,7 +766,7 @@ func reponce_interpretation(reponcee: PoolByteArray):
 						print("AuthenticationSASLFinal")
 						close(false)
 					_:
-						push_error("Code d'autenfication inconnu")
+						push_error("[PostgreSQLClient:%d] Code d'autenfication inconnu" % [get_instance_id()])
 						
 						close(false)
 			'S':
@@ -996,15 +1014,18 @@ func reponce_interpretation(reponcee: PoolByteArray):
 				print("CloseComplete")
 			var message_type:
 				# We close the connection with the backend if the type of message is not recognized.
-				push_error("(PostgreSQLClient) The type of message envoyer pas le backend is not recognized (%c)." % [message_type])
+				push_error("[PostgreSQLClient:%d] The type of message envoyer pas le backend is not recognized (%c)." % [get_instance_id(), message_type])
 				
 				close(false)
 		
 		# Comme la reponce du serveur peu contenir plusieur messages on lit le message puis on suprime le message traiter pour lire le suivant dans la boucle
-		reponce = reponce.subarray(message_length + 1, -1)
+		if reponce.size() != message_length + 1:
+			reponce = reponce.subarray(message_length + 1, -1)
+		else:
+			reponce = PoolByteArray()
 
 
-func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int) -> Array:
+static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int) -> Array:
 	var array := []
 	var from := 0
 	var to := 0
