@@ -2,12 +2,19 @@ extends Node
 
 var database := PostgreSQLClient.new()
 
+const USER = "Samuel"
+const PASSWORLD = "my_passworld"
+const HOST = "localhost"
+const PORT = 5432 # Default postgres port
+const DATABASE = "my_database"
+
+
 func _init() -> void:
 	database.connect("connection_established", self, "_executer")
 	database.connect("connection_closed", self, "_close")
 	
 	#Connection to the database
-	var _error := database.connect_to_host("postgresql://user:passworld@localhost:5432/database_name")
+	var _error := database.connect_to_host("postgresql://%s:%s@%s:%d/%s" % [USER, PASSWORLD, HOST, PORT, DATABASE])
 
 
 func _executer() -> void:
