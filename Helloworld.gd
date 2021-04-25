@@ -10,11 +10,11 @@ const DATABASE = "my_database"
 
 
 func _init() -> void:
-	database.connect("connection_established", self, "_executer")
-	database.connect("connection_closed", self, "_close")
+	var _error := database.connect("connection_established", self, "_executer")
+	_error = database.connect("connection_closed", self, "_close")
 	
 	#Connection to the database
-	var _error := database.connect_to_host("postgresql://%s:%s@%s:%d/%s" % [USER, PASSWORLD, HOST, PORT, DATABASE])
+	_error = database.connect_to_host("postgresql://%s:%s@%s:%d/%s" % [USER, PASSWORLD, HOST, PORT, DATABASE])
 
 
 func _executer() -> void:
