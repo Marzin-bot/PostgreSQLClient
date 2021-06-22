@@ -3,7 +3,7 @@ extends Node
 var database := PostgreSQLClient.new()
 
 const USER = "Samuel"
-const PASSWORLD = "my_passworld"
+const PASSWORLD = "my_password"
 const HOST = "localhost"
 const PORT = 5432 # Default postgres port
 const DATABASE = "my_database"
