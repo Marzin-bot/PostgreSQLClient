@@ -19,6 +19,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | Type | Properties | Default value |
 | --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
+| `dictionary` | parameter_status *reader alone* | {} |
 
 **METHODS:**
 
@@ -46,6 +47,21 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 Default value: `3.0`
 
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
+
+---
+
+- `dictionary` parameter_status *reader alone*
+
+Default value: {}
+
+A dictionary that contains various information about the state of the server. For security reasons the dictionary is always empty if the frontend is disconnected from the backend and updates once the connection is established.
+
+Noted that the server is free to return whatever value it wants. Always remember to check the presence of the key before accessing the associated value.
+
+Example of a typical value that a backend might return. Values may differ depending on the backend:
+```
+{"DateStyle":"ISO, DMY", "IntervalStyle":"postgres", "TimeZone:Europe/Paris", "application_name":"", "client_encoding":"UTF8", "integer_datetimes":"on", "is_superuser":"off", "server_encoding":"UTF8", "server_version":"12.7 (Ubuntu 12.7-0ubuntu0.20.04.1)", "session_authorization":"samuel", "standard_conforming_strings":"on"}
+```
 
 ---
 
