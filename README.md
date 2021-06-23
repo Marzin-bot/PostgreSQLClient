@@ -61,7 +61,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 -	LINE = 628, --- Postgresql data type of type `line`.
 -	CIRCLE = 718 --- Postgresql data type of type `circle`.
 
-NOTE: Not all types are supported by PostgreSQLClient but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
+NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
 This enumeration will be useful in the next version of the Client with the arrival of the PostgreSQLQueryResult object.
 
 --
