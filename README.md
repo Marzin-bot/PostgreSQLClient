@@ -51,6 +51,11 @@ Allows you to connect to a Postgresql backend at the specified `url`.
 
 The url parameter is a PostgreSQL url ideally in the form "postgresql://user:password@host:port/databasename".
 All other PostgreSQL url syntaxes specified in this page [https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING] are not yet fully supported.
+===============================================
+- `Array`  execute(sql: String)
+
+Allows to send an SQL string to the backend that should run.
+The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` containing the result of the query (can be empty). The return value will be subject to change in the next version of the PostgreSQL client which will return an array of PostgreSQLQueryResult that will contain much more information about the result of the query.
 
 **Signal Descriptions**
 not finalized
