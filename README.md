@@ -45,7 +45,7 @@ Default value: `3.0`
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
 
 **Method Descriptions**
-- `Error` connect_to_host(url: String, connect_timeout: int = 30)
+- `Error`  connect_to_host(url: String, connect_timeout: int = 30)
 
 Allows you to connect to a Postgresql backend at the specified `url`.
 
@@ -57,6 +57,19 @@ All other PostgreSQL url syntaxes specified in this page [https://www.postgresql
 
 Allows to send an SQL string to the backend that should run.
 The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` containing the result of the query (can be empty). The return value will be subject to change in the next version of the PostgreSQL client which will return an array of PostgreSQLQueryResult that will contain much more information about the result of the query.
+
+
+- `void`  rollback(process_id : int, process_key : int)
+
+Do not use because it is too unstable, will be subject to modification in future versions.
+
+
+- `void`  close(clean_closure: bool = true)
+
+Allows you to close the connection with the backend. If clean_closure is `true`, the frontend will notify the backend that it requests to close the connection. If `false`, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
+
+Has no effect if the frontend is not already connected to the backend.
+
 
 **Signal Descriptions**
 not finalized
