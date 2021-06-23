@@ -184,13 +184,13 @@ Specifies the number of fields in a row (can be zero).
 
 `Array`  row_description *const*
 
-Default value: `\[\]`
+Default value: `[]`
 
 ---
 
 `Array`  data_row *const*
 
-Default value: `\[\]`
+Default value: `[]`
 
 An `Array` that contains sub-arrays. these sub-arrays represented for most of the queries the rows of the table where the query was executed. The number of sub-tables depends on the request that has been made. These sub-arrays contain as many elements as "number_of_fields_in_a_row". These elements are native GDscript types that represent the data resulting from the query.
 
