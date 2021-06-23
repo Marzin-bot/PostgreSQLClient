@@ -41,7 +41,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 
 ---
 
-**ENUMARATIONS**
+**ENUMARATIONS:**
 
 `enum` DataTypePostgreSQL
 
