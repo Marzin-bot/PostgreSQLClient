@@ -171,6 +171,50 @@ The PostgreSQLQueryResult class is a subclass of PostgreSQLClient which is not i
 | --- | --- |
 | `Array` | get_field_value(field_name: String) |
 
+---
+
+**Property Descriptions**
+`int`  number_of_fields_in_a_row *const*
+
+Default value: `0`
+
+Specifies the number of fields in a row (can be zero).
+
+---
+
+`Array`  row_description *const*
+
+Default value: `\[\]`
+
+---
+
+`Array`  data_row *const*
+
+Default value: `\[\]`
+
+An `Array` that contains sub-arrays. these sub-arrays represented for most of the queries the rows of the table where the query was executed. The number of sub-tables depends on the request that has been made. These sub-arrays contain as many elements as "number_of_fields_in_a_row". These elements are native GDscript types that represent the data resulting from the query.
+
+Example return value:
+
+```
+[[1, "Hello my id is 1"], [2, "Hello my id is 2"], [3, "Hello my id is 3"]]
+```
+There are 3 rows.
+Each row contains the value of 2 fields: The row identifier and a character string.
+
+---
+
+`String`  command_tag *const*
+
+Default value: `""`
+
+This is usually a single word that identifies which SQL command was completed.
+
+---
+
+**Method Descriptions**
+Function that returns all the values of a field.
+
 Contacts:
 =======================
 - Discord: Kuwazy#8194
