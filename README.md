@@ -40,8 +40,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 **Property Descriptions**
 - `float`  PROTOCOL_VERSION *const*
 
-| --- | --- |
-| Default | `3.0` |
+Default value: `3.0`
 
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
 
