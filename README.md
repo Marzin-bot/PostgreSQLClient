@@ -38,7 +38,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | connection_established() |
 
 **Property Descriptions**
-- `float` PROTOCOL_VERSION *const*```
+- `float` PROTOCOL_VERSION *const*
 
 | Default | `3.0` |
 
