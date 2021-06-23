@@ -147,6 +147,7 @@ Do not listen to this signal, does not work. will be subject to change see remov
 
 Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
 
+---
 
 DOCUMENTATION PostgreSQLQueryResult (NON FINALISÉE):
 ====================================================
@@ -154,6 +155,21 @@ DOCUMENTATION PostgreSQLQueryResult (NON FINALISÉE):
 
 The PostgreSQLQueryResult class is a subclass of PostgreSQLClient which is not intended to be created manually. It represents the result of an SQL query and provides an information and method report
  to use the result of the query. It is usually returned by the "PostgreSQLClient.execute ()" method in an array of PostgreSQLQueryResult. This class is not currently used but will be in future versions.
+
+**PROPERTIES:**
+
+| Type | Properties | Default value |
+| --- | --- | --- |
+| `int` | number_of_fields_in_a_row *const* | 0 |
+| `Array` | row_description *const* | \[\] |
+| `Array` | data_row *const* | \[\] |
+| `String` | command_tag *const* | \"\" |
+
+**METHODS:**
+
+| Type | Method |
+| --- | --- |
+| `Array` | get_field_value(field_name: String) |
 
 Contacts:
 =======================
