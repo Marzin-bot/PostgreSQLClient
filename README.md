@@ -79,7 +79,7 @@ Version number (minor.major) of the PostgreSQL protocol used when connecting to 
 
 Default value: {}
 
-A dictionary that contains various information about the state of the server. For security reasons the dictionary is always empty if the frontend is disconnected from the backend and updates once the connection is established.
+A dictionary that contains various information about the execution state of the server. For security reasons the dictionary is always empty if the frontend is disconnected from the backend and updates once the connection is established.
 
 Noted that the server is free to return whatever value it wants. Always remember to check the presence of the key before accessing the associated value.
 
