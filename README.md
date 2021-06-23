@@ -77,4 +77,17 @@ Not working at the moment, don't use it. will be subject to change in future ver
 
 
 **Signal Descriptions**
-not finalized
+- connection_closed(was_clean_close: bool)
+
+Fires when the connection to the backend closes.
+`was_clean_close` is `true` if the connection was closed correctly otherwise `false`.
+
+
+- connection_error()
+
+Do not listen to this signal, does not work. will be subject to change see removed in future versions.
+
+
+- connection_established()
+
+Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
