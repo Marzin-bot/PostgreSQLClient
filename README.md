@@ -45,7 +45,12 @@ Default value: `3.0`
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
 
 **Method Descriptions**
-not finalized
+- `Error` connect_to_host(url: String, connect_timeout: int = 30)
+
+Allows you to connect to a Postgresql backend at the specified `url`.
+
+The url parameter is a PostgreSQL url ideally in the form "postgresql://user:password@host:port/databasename".
+All other PostgreSQL url syntaxes specified in this page [https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING] are not yet fully supported.
 
 **Signal Descriptions**
 not finalized
