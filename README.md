@@ -107,3 +107,9 @@ Do not listen to this signal, does not work. will be subject to change see remov
 - connection_established()
 
 Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
+
+
+Contacts:
+=======================
+Discord: Kuwazy#8194
+email: zenpolcorporation@gmail.com
