@@ -20,8 +20,6 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
 
----
-
 **METHODS:**
 
 | Type | Method |
