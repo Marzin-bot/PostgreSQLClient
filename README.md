@@ -71,5 +71,10 @@ Allows you to close the connection with the backend. If clean_closure is `true`,
 Has no effect if the frontend is not already connected to the backend.
 
 
+- `void`  set_ssl_connection()
+
+Not working at the moment, don't use it. will be subject to change in future versions.
+
+
 **Signal Descriptions**
 not finalized
