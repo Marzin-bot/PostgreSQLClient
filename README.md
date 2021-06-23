@@ -45,21 +45,21 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 
 `enum` DataTypePostgreSQL
 
-- BOOLEAN = 16 ---postgresql data type of type `boolean`.
-- SMALLINT = 21, ---postgresql data type of type `smallint`.
-- INTEGER = 23, ---postgresql data type of type `integer`.
-- BIGINT = 20, ---postgresql data type of type `bigint`.
-- REAL = 700, ---postgresql data type of type `real`.
-- DOUBLE_PRECISION = 701, ---postgresql data type of type `double precision`.
-- TEXT = 25, ---postgresql data type of type `text`.
-- JSON = 114, ---postgresql data type of type `json`.
--	JSONB = 3802, ---postgresql data type of type `jsonb`.
--	BITEA = 17, ---postgresql data type of type `bitea`.
--	POINT = 600, ---postgresql data type of type `point`.
--	BOX = 603, ---postgresql data type of type `box`.
--	LSEG = 601, ---postgresql data type of type `lseg`.
--	LINE = 628, ---postgresql data type of type `line`.
--	CIRCLE = 718 ---postgresql data type of type `circle`.
+- BOOLEAN = 16 --- Postgresql data type of type `boolean`.
+- SMALLINT = 21, --- Postgresql data type of type `smallint`.
+- INTEGER = 23, --- Postgresql data type of type `integer`.
+- BIGINT = 20, --- Postgresql data type of type `bigint`.
+- REAL = 700, --- Postgresql data type of type `real`.
+- DOUBLE_PRECISION = 701, --- Postgresql data type of type `double precision`.
+- TEXT = 25, --- Postgresql data type of type `text`.
+- JSON = 114, --- Postgresql data type of type `json`.
+-	JSONB = 3802, --- Postgresql data type of type `jsonb`.
+-	BITEA = 17, --- Postgresql data type of type `bitea`.
+-	POINT = 600, --- Postgresql data type of type `point`.
+-	BOX = 603, --- Postgresql data type of type `box`.
+-	LSEG = 601, --- Postgresql data type of type `lseg`.
+-	LINE = 628, --- Postgresql data type of type `line`.
+-	CIRCLE = 718 --- Postgresql data type of type `circle`.
 
 NOTE: Not all types are supported by PostgreSQLClient but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
 This enumeration will be useful in the next version of the Client with the arrival of the PostgreSQLQueryResult object.
