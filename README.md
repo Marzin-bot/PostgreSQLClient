@@ -111,5 +111,5 @@ Trigger when the connection between the frontend and the backend is established.
 
 Contacts:
 =======================
-Discord: Kuwazy#8194
-email: zenpolcorporation@gmail.com
+- Discord: Kuwazy#8194
+- email: zenpolcorporation@gmail.com
