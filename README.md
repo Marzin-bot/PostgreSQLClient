@@ -20,6 +20,7 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
 
+---
 
 **METHODS:**
 
@@ -39,12 +40,16 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | connection_error() |
 | connection_established() |
 
+---
+
 **Property Descriptions**
 - `float`  PROTOCOL_VERSION *const*
 
 Default value: `3.0`
 
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
+
+---
 
 **Method Descriptions**
 - `Error`  connect_to_host(url: String, connect_timeout: int = 30)
@@ -56,16 +61,20 @@ All other PostgreSQL url syntaxes specified in this page [https://www.postgresql
 
 Noted that the default port for PostgreSQL is `5432`.
 
+---
+
 - `Array`  execute(sql: String)
 
 Allows to send an SQL string to the backend that should run.
 The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` containing the result of the query (can be empty). The return value will be subject to change in the next version of the PostgreSQL client which will return an array of PostgreSQLQueryResult that will contain much more information about the result of the query.
 
+---
 
 - `void`  rollback(process_id : int, process_key : int)
 
 Do not use because it is too unstable, will be subject to modification in future versions.
 
+---
 
 - `void`  close(clean_closure: bool = true)
 
@@ -73,11 +82,13 @@ Allows you to close the connection with the backend. If clean_closure is `true`,
 
 Has no effect if the frontend is not already connected to the backend.
 
+---
 
 - `void`  set_ssl_connection()
 
 Not working at the moment, don't use it. will be subject to change in future versions.
 
+---
 
 **Signal Descriptions**
 - connection_closed(was_clean_close: bool)
@@ -85,11 +96,13 @@ Not working at the moment, don't use it. will be subject to change in future ver
 Fires when the connection to the backend closes.
 `was_clean_close` is `true` if the connection was closed correctly otherwise `false`.
 
+---
 
 - connection_error()
 
 Do not listen to this signal, does not work. will be subject to change see removed in future versions.
 
+---
 
 - connection_established()
 
