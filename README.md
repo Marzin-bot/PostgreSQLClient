@@ -38,7 +38,11 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | connection_established() |
 
 **Property Descriptions**
-not finalized
+- `float` PROTOCOL_VERSION *const*```
+
+| Default | `3.0` |
+
+Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
 
 **Method Descriptions**
 not finalized
