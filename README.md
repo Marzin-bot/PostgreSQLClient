@@ -60,7 +60,7 @@ Noted that the server is free to return whatever value it wants. Always remember
 
 Example of a typical value that a backend might return. Values may differ depending on the backend:
 ```
-{"DateStyle":"ISO, DMY", "IntervalStyle":"postgres", "TimeZone:Europe/Paris", "application_name":"", "client_encoding":"UTF8", "integer_datetimes":"on", "is_superuser":"off", "server_encoding":"UTF8", "server_version":"12.7 (Ubuntu 12.7-0ubuntu0.20.04.1)", "session_authorization":"samuel", "standard_conforming_strings":"on"}
+{"DateStyle":"ISO, DMY", "IntervalStyle":"postgres", "TimeZone":"Europe/Paris", "application_name":"", "client_encoding":"UTF8", "integer_datetimes":"on", "is_superuser":"off", "server_encoding":"UTF8", "server_version":"12.7 (Ubuntu 12.7-0ubuntu0.20.04.1)", "session_authorization":"samuel", "standard_conforming_strings":"on"}
 ```
 
 ---
