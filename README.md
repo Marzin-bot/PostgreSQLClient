@@ -38,8 +38,9 @@ CLASS DOCUMENTATION (NOT FINALIZED):
 | connection_established() |
 
 **Property Descriptions**
-- `float` PROTOCOL_VERSION *const*
+- `float`  PROTOCOL_VERSION *const*
 
+| --- | --- |
 | Default | `3.0` |
 
 Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend
