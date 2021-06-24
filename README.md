@@ -202,7 +202,7 @@ Each dictionary is structured like this:
 }
 ```
 
-- Where the `field_name` value is a string that represents the name of the field.
+- Where the `field_name` value is a `String` that represents the name of the field.
 - Where the value `table object_id` is an `int` which represents the identifier of the table object whether the field can be identified as a column from a specific table; otherwise `0`.
 - Where the `column_index` value is an `int` which represents the attribute number of the column if the field can be identified as a column from a specific table; otherwise zero.
 - Where the `type_object_id` value is an `PostgreSQLClient.DataTypePostgreSQL` which represents the object ID of the data type of the field.
