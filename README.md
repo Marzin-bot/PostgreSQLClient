@@ -53,13 +53,13 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - DOUBLE_PRECISION = 701, --- Postgresql data type of type `double precision`.
 - TEXT = 25, --- Postgresql data type of type `text`.
 - JSON = 114, --- Postgresql data type of type `json`.
--	JSONB = 3802, --- Postgresql data type of type `jsonb`.
--	BITEA = 17, --- Postgresql data type of type `bitea`.
--	POINT = 600, --- Postgresql data type of type `point`.
--	BOX = 603, --- Postgresql data type of type `box`.
--	LSEG = 601, --- Postgresql data type of type `lseg`.
--	LINE = 628, --- Postgresql data type of type `line`.
--	CIRCLE = 718 --- Postgresql data type of type `circle`.
+- JSONB = 3802, --- Postgresql data type of type `jsonb`.
+- BITEA = 17, --- Postgresql data type of type `bitea`.
+- POINT = 600, --- Postgresql data type of type `point`.
+- BOX = 603, --- Postgresql data type of type `box`.
+- LSEG = 601, --- Postgresql data type of type `lseg`.
+- LINE = 628, --- Postgresql data type of type `line`.
+- CIRCLE = 718 --- Postgresql data type of type `circle`.
 
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
 This enumeration will be useful in the next version of the Client with the arrival of the PostgreSQLQueryResult object.
@@ -170,6 +170,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | Type | Method |
 | --- | --- |
 | `Array` | get_field_values(field_name: String) |
+| `PostgreSQLClient.DataTypePostgreSQL` | field_data_type(field_name: String) |
 
 ---
 
@@ -203,7 +204,7 @@ Each dictionary is structured like this:
 ```
 
 - Where the `field_name` value is a string that represents the name of the field.
-- Where the value `table object_id` is an `int` which represents the identifier of the table object whether the field can be identified as a column from a specific table; otherwise 0.
+- Where the value `table object_id` is an `int` which represents the identifier of the table object whether the field can be identified as a column from a specific table; otherwise `0`.
 - Where the `column_index` value is an `int` which represents the attribute number of the column if the field can be identified as a column from a specific table; otherwise zero.
 - Where the `type_object_id` value is an `PostgreSQLClient.DataTypePostgreSQL` which represents the object ID of the data type of the field.
 - Where the `data_type_size` value is an` int` which represents the size of the data type. Note: that negative values indicate variable width types.
@@ -238,10 +239,17 @@ This is usually a single word that identifies which SQL command was completed.
 
 **Method Descriptions**
 
-`Array` get_field_values(field_name: String)
+`Array`  get_field_values(field_name: String)
 
-Function that returns all the values of a field.
+Returns all the values of a field.
 `field_name` is the name of the field on which we get the values. Can be empty if the field name is unknown. The `field_name` parameter is case sensitive.
+
+---
+
+`PostgreSQLClient.DataTypePostgreSQL`  field_data_type(field_name: String)
+
+Returns the object ID of the data type of the field.
+`field_name` is the name of the field whose type we get. Can return `-1` if the field name is unknown. The `field_name` parameter is case sensitive.
 
 Contacts:
 =======================
