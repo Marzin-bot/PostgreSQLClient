@@ -226,6 +226,8 @@ Example return value:
 There are 3 rows.
 Each row contains the value of 2 fields: The row identifier and a character string.
 
+/!\\At the moment, it doesn't only return native types! this will be the case in the future version! this is one of the first mistakes I made while writing PostgreSQLClient./!\\
+
 ---
 
 `String`  command_tag *const*
