@@ -186,7 +186,7 @@ Specifies the number of fields in a row (can be zero).
 
 Default value: `[]`
 
-An array that contains dictionaries. these dictionaries represent the description of the lines where the query was executed. The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
+An array that contains dictionaries. these dictionaries represent the description of the rows where the query was executed. The number of dictionary depends on the number of fields resulting from the query which was executed.
 
 ---
 
