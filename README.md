@@ -92,8 +92,8 @@ Example of a typical value that a backend might return. Values may differ depend
 
 Allows you to connect to a Postgresql backend at the specified `url`.
 
-The url parameter is a PostgreSQL url ideally in the form "postgresql://user:password@host:port/databasename".
-All other PostgreSQL url syntaxes specified in this page [https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING] are not yet fully supported.
+The `url` parameter is a PostgreSQL URL ideally in the form "postgresql://user:password@host:port/databasename".
+All other PostgreSQL URL syntaxes specified in this page [https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING] are not yet fully supported.
 
 Noted that the default port for PostgreSQL is `5432`.
 
