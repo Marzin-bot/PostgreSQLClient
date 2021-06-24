@@ -39,8 +39,6 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | connection_error() |
 | connection_established() |
 
----
-
 **ENUMARATIONS:**
 
 `enum` DataTypePostgreSQL
@@ -64,7 +62,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
 This enumeration will be useful in the next version of the Client with the arrival of the PostgreSQLQueryResult object.
 
---
+---
 
 **Property Descriptions**
 - `float`  PROTOCOL_VERSION *const*
@@ -88,7 +86,7 @@ Example of a typical value that a backend might return. Values may differ depend
 {"DateStyle":"ISO, DMY", "IntervalStyle":"postgres", "TimeZone":"Europe/Paris", "application_name":"", "client_encoding":"UTF8", "integer_datetimes":"on", "is_superuser":"off", "server_encoding":"UTF8", "server_version":"12.7 (Ubuntu 12.7-0ubuntu0.20.04.1)", "session_authorization":"samuel", "standard_conforming_strings":"on"}
 ```
 
----
+
 
 **Method Descriptions**
 - `Error`  connect_to_host(url: String, connect_timeout: int = 30)
@@ -127,7 +125,7 @@ Has no effect if the frontend is not already connected to the backend.
 
 Not working at the moment, don't use it. will be subject to change in future versions.
 
----
+
 
 **Signal Descriptions**
 - connection_closed(was_clean_close: bool)
@@ -147,7 +145,7 @@ Do not listen to this signal, does not work. will be subject to change see remov
 
 Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
 
----
+
 
 DOCUMENTATION PostgreSQLQueryResult (NON FINALISÉE):
 ====================================================
@@ -172,7 +170,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | `Array` | get_field_values(field_name: String) |
 | `PostgreSQLClient.DataTypePostgreSQL` | field_data_type(field_name: String) |
 
----
+
 
 **Property Descriptions**
 `int`  number_of_fields_in_a_row *const*
@@ -235,7 +233,7 @@ Default value: `""`
 
 This is usually a single word that identifies which SQL command was completed.
 
----
+
 
 **Method Descriptions**
 
