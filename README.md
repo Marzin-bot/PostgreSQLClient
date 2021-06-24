@@ -169,7 +169,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 
 | Type | Method |
 | --- | --- |
-| `Array` | get_field_value(field_name: String) |
+| `Array` | get_field_values(field_name: String) |
 
 ---
 
@@ -238,7 +238,7 @@ This is usually a single word that identifies which SQL command was completed.
 
 **Method Descriptions**
 
-`Array` get_field_value(field_name: String)
+`Array` get_field_values(field_name: String)
 
 Function that returns all the values of a field.
 `field_name` is the name of the field on which we get the values. Can be empty if the field name is unknown. The `field_name` parameter is case sensitive.
