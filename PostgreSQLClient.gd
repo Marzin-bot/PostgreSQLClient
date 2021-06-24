@@ -41,11 +41,11 @@ signal connection_established
 # True when the server is ready to receive new data.
 var rep = true
 
-##################No use at the moment###############
+################## No use at the moment ###############
 ## The process ID of this backend.
 var process_backend_id: int
 
-##################No use at the moment###############
+################## No use at the moment ###############
 ## The secret key of this backend.
 var process_backend_secret_key: int
 
