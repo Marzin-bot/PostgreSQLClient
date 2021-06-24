@@ -25,7 +25,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 
 | Type | Method |
 | --- | --- |
-| `Error` | connect_to_host(url: String, connect_timeout: int = 30) |
+| `Error` | connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30) |
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
@@ -60,7 +60,6 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - CIRCLE = 718 --- Postgresql data type of type `circle`.
 
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
-This enumeration will be useful in the next version of the Client with the arrival of the PostgreSQLQueryResult object.
 
 ---
 
@@ -89,7 +88,7 @@ Example of a typical value that a backend might return. Values may differ depend
 
 
 **Method Descriptions**
-- `Error`  connect_to_host(url: String, connect_timeout: int = 30)
+- `Error`  connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30)
 
 Allows you to connect to a Postgresql backend at the specified `url`.
 
@@ -98,12 +97,14 @@ All other PostgreSQL url syntaxes specified in this page [https://www.postgresql
 
 Noted that the default port for PostgreSQL is `5432`.
 
+The `ssl` parameter is unstable, therefore do not pass to `true`. The problem will be fixed in the future version.
+
 ---
 
 - `Array`  execute(sql: String)
 
 Allows to send an SQL string to the backend that should run.
-The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` containing the result of the query (can be empty). The return value will be subject to change in the next version of the PostgreSQL client which will return an array of PostgreSQLQueryResult that will contain much more information about the result of the query.
+The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (sof in exceptional cases).
 
 ---
 
@@ -152,7 +153,7 @@ DOCUMENTATION PostgreSQLQueryResult (NON FINALISÉE):
 **Descriptions**
 
 The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is not intended to be created manually. It represents the result of an SQL query and provides an information and method report
- to use the result of the query. It is usually returned by the `PostgreSQLClient.execute()` method in an array of `PostgreSQLQueryResult`. This class is not currently used but will be in future versions.
+ to use the result of the query. It is usually returned by the `PostgreSQLClient.execute()` method in an array of `PostgreSQLQueryResult`.
 
 **PROPERTIES:**
 
