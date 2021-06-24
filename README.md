@@ -190,15 +190,16 @@ An array that contains dictionaries. these dictionaries represent the descriptio
 
 Each dictionary is structured like this:
 
-```{
-						"field_name": field_name,
-						"table_object_id": table_object_id,
-						"column_index": column_index,
-						"type_object_id": type_object_id,
-						"data_type_size": data_type_size,
-						"type_modifier": type_modifier,
-						"format_code": format_code
-					}
+```
+{
+	"field_name": field_name,
+	"table_object_id": table_object_id,
+	"column_index": column_index,
+	"type_object_id": type_object_id,
+	"data_type_size": data_type_size,
+	"type_modifier": type_modifier,
+	"format_code": format_code
+}
 ```
 
 - Where the `field_name` value is a string that represents the name of the field
