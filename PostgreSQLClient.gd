@@ -1,3 +1,6 @@
+# Written by Samuel MARZIN
+# Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
+
 extends Object
 
 class_name PostgreSQLClient
@@ -13,7 +16,7 @@ const PROTOCOL_VERSION := 3.0
 # not using
 var is_connected_to_host := false
 
-# determine si "autentifier" au près du server
+# Determines if we "authenticate" to the server.
 var authentication := false
 
 var password_global: String
