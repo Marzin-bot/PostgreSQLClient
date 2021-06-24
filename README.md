@@ -188,6 +188,27 @@ Default value: `[]`
 
 An array that contains dictionaries. these dictionaries represent the description of the rows where the query was executed. The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
 
+Each dictionary is structured like this:
+
+```{
+						"field_name": field_name,
+						"table_object_id": table_object_id,
+						"column_index": column_index,
+						"type_object_id": type_object_id,
+						"data_type_size": data_type_size,
+						"type_modifier": type_modifier,
+						"format_code": format_code
+					}
+```
+
+- Where the `field_name` value is a string that represents the name of the field
+- Where the value `table object_id` is an `int` which represents the identifier of the table object whether the field can be identified as a column from a specific table; otherwise 0.
+- Where the `column_index` value is an `int` which represents the attribute number of the column if the field can be identified as a column from a specific table; otherwise zero.
+- Where the `type_object_id` value is an `PostgreSQLClient.DataTypePostgreSQL` which represents the object ID of the data type of the field.
+- Where the `data_type_size` value is an` int` which represents the size of the data type. Note: that negative values indicate variable width types.
+- Where the `type_modifier` value is an` int` which represents the type modifier. Note: The meaning of the modifier is type specific.
+- Where the `format_code` value is an` int` which represents the format code used for the field. Currently will be `0` (text) or` 1` (binary). In a RowDescription returned by the instruction variant of Describe, the format code is not yet known and will always be zero. This value is low-level PostgreSQL protocol information that is not useful in most cases. You can ignore this value.
+
 ---
 
 `Array`  data_row *const*
