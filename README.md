@@ -186,13 +186,15 @@ Specifies the number of fields in a row (can be zero).
 
 Default value: `[]`
 
+An array that contains dictionaries. these dictionaries represent the description of the lines where the query was executed. The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
+
 ---
 
 `Array`  data_row *const*
 
 Default value: `[]`
 
-An `Array` that contains sub-arrays. these sub-arrays represented for most of the queries the rows of the table where the query was executed. The number of sub-tables depends on the query that has been made. These sub-arrays contain as many elements as `number_of_fields_in_a_row`. These elements are native GDscript types that represent the data resulting from the query.
+An `Array` that contains sub-arrays. these sub-arrays represent for most of the queries the rows of the table where the query was executed. The number of sub-tables depends on the query that has been made. These sub-arrays contain as many elements as `number_of_fields_in_a_row`. These elements are native GDscript types that represent the data resulting from the query.
 
 Example return value:
 
