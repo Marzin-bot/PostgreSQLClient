@@ -66,7 +66,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - LINE = 628, --- Postgresql data type of type `line`.
 - CIRCLE = 718 --- Postgresql data type of type `circle`.
 
-NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release with a PostgreSQL to native GDscript type conversion table in the documentation.
+NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release.
 
 ---
 
@@ -234,6 +234,24 @@ There are 3 rows.
 Each row contains the value of 2 fields: The row identifier and a character string.
 
 /!\\  At the moment, it doesn't only return native types! this will be the case in the future version! this is one of the first mistakes I made while writing PostgreSQLClient.  /!\\
+
+**Table of type PostgreSQL equivalent to Godot**
+| Types postgres | Type Godot |
+| --- | --- |
+| `null` | `null` |
+| `smallint`, `integer`, `bigint` | `int` |
+| `real`, `double precision` | `float` |
+| `text` | `String` |
+| `json`, `jsonb` | `JSONParseResult` |
+| `bitea` | `PoolByteArray` |
+| `point` | `Vector2` |
+| `box` | `Rect2` |
+| `lseg` | `PoolVector2Array` |
+| `line`, `circle` | `Vector3` |
+
+Note:
+- JSON types will return a `String` instead of a `JSONParseResult` in a future version.
+- Not all PostgreSQL types are supported yet.
 
 ---
 
