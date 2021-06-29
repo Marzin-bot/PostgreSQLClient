@@ -71,6 +71,7 @@ NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will 
 ---
 
 **Property Descriptions**
+
 - `float`  PROTOCOL_VERSION *const*
 
 Default value: `3.0`
@@ -181,6 +182,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 ---
 
 **Property Descriptions**
+
 `int`  number_of_fields_in_a_row *const*
 
 Default value: `0`
