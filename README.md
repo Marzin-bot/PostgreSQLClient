@@ -168,7 +168,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | Type | Properties | Default value |
 | --- | --- | --- |
 | `int` | number_of_fields_in_a_row *const* | 0 |
-| `Dictionary` | row_description *const* | No value default |
+| `Array` | row_description *const* | \[\] |
 | `Array` | data_row *const* | \[\] |
 | `String` | command_tag *const* | \"\" |
 
@@ -191,7 +191,9 @@ Specifies the number of fields in a row (can be zero).
 
 ---
 
-`Dictionary`  row_description *const*
+`Array`  row_description *const*
+
+Default value: `[]`
 
 An array that contains dictionaries. these dictionaries represent the description of the rows where the query was executed. The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
 
