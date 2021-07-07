@@ -191,9 +191,7 @@ Specifies the number of fields in a row (can be zero).
 
 ---
 
-`Array`  row_description *const*
-
-Default value: `[]`
+`Dictionary`  row_description *const*
 
 An array that contains dictionaries. these dictionaries represent the description of the rows where the query was executed. The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
 
