@@ -168,7 +168,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | Type | Properties | Default value |
 | --- | --- | --- |
 | `int` | number_of_fields_in_a_row *const* | 0 |
-| `Dictionary` | row_description *const* | {} |
+| `Dictionary` | row_description *const* | No value default |
 | `Array` | data_row *const* | \[\] |
 | `String` | command_tag *const* | \"\" |
 
