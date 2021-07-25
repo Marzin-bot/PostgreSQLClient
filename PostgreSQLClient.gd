@@ -1,8 +1,12 @@
+# Lience MIT
 # Written by Samuel MARZIN
 # Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
 
 extends Object
 
+## Godot PostgreSQL Client is a GDscript script / class that allows you to connect to a Postgres backend and run SQL commands there.
+## It is able to send data and receive it from the backend. Useful for managing player user data on a multiplayer game, by saving a large amount of data on a dedicated Postgres server from GDscript.
+## The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms.
 class_name PostgreSQLClient
 
 ## Backend runtime parameters
@@ -33,8 +37,16 @@ func _init() -> void:
 	peerstream.set_stream_peer(client)
 	peer = peerstream.stream_peer
 
+
+## Fires when the connection to the backend closes.
+## was_clean_close is true if the connection was closed correctly otherwise false.
 signal connection_closed(was_clean_close)
-signal connection_error #no use
+
+# No use
+signal connection_error
+
+## Trigger when the connection between the frontend and the backend is established.
+## This is usually a good time to start making requests to the backend with execute ().
 signal connection_established
 
 
@@ -110,11 +122,17 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	return error
 
 
-## Close the connexion to host.
+## Allows you to close the connection with the backend.
+## If clean_closure is true, the frontend will notify the backend that it requests to close the connection.
+## If false, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
+## Has no effect if the frontend is not already connected to the backend.
 func close(clean_closure := true) -> void:
 	if authentication:
 		if clean_closure:
 			### Terminate ###
+			
+			# Identifies the message as a termination.
+			
 			peer.put_data(request('X', PoolByteArray()))
 		
 		client.disconnect_from_host()
@@ -128,7 +146,10 @@ func close(clean_closure := true) -> void:
 		push_warning("[PostgreSQLClient:%d] Le fontend étai déjà déconnecter du frontend au moment de l'appel de close()." % [get_instance_id()])
 
 
-## Run an SQL script and return an array from PostgreSQLQueryResult (can be an empty array).
+## Allows to send an SQL string to the backend that should run.
+## The sql parameter can contain one or more valid SQL statements.
+## Returns an Array of PostgreSQLQueryResult. (Can be empty)
+## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (sof in exceptional cases).
 func execute(sql: String) -> Array:
 	if authentication:
 		peer.put_data(request('Q', sql.to_utf8() + PoolByteArray([0])))
@@ -154,7 +175,7 @@ func execute(sql: String) -> Array:
 	return []
 
 
-## Active SSL
+## Upgrade the connexion to SSL.
 func set_ssl_connection():
 	### SSLRequest ###
 	
@@ -172,7 +193,6 @@ func set_ssl_connection():
 	# The SSL request code.
 	# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
 	buffer.put_u32(12345679)
-	
 	
 	peer.put_data(buffer.data_array.subarray(4, -1))
 
@@ -240,7 +260,7 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	return buffer.data_array.subarray(4, -1)
 
 
-func get_32bit_invert(integer: int) -> PoolByteArray:
+static func get_32bit_invert(integer: int) -> PoolByteArray:
 	var buffer := StreamPeerBuffer.new()
 	
 	buffer.put_32(integer)
@@ -249,6 +269,21 @@ func get_32bit_invert(integer: int) -> PoolByteArray:
 	bit.invert()
 	
 	return bit
+
+
+static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int) -> Array:
+	var array := []
+	var from := 0
+	var to := 0
+	
+	for byte in pool_byte_array:
+		if byte == delimiter:
+			array.append(pool_byte_array.subarray(from, to))
+			from = to + 1
+		
+		to += 1
+		
+	return array
 
 
 enum DataTypePostgreSQL {
@@ -269,23 +304,32 @@ enum DataTypePostgreSQL {
 	CIRCLE = 718
 }
 
-
+## The PostgreSQLQueryResult class is a subclass of PostgreSQLClient which is not intended to be created manually.
+## It represents the result of an SQL query and provides an information and method report to use the result of the query.
+## It is usually returned by the PostgreSQLClient.execute() method in an array of PostgreSQLQueryResult.
 class PostgreSQLQueryResult:
 	## Specifies the number of fields in a row (can be zero).
 	var number_of_fields_in_a_row := 0
-
-	## Row description
+	
+	## An array that contains dictionaries.
+	## These dictionaries represent the description of the rows where the query was executed.
+	## The number of dictionary depends on the number of fields resulting from the result of the query which was executed.
 	var row_description := []
 	
-	## An Array that contains sub-arrays. these sub-arrays represented for most of the queries the rows of the table where the query was executed. The number of sub-tables depends on the query that has been made. These sub-arrays contain as many elements as number_of_fields_in_a_row. These elements are native GDscript types that represent the data resulting from the query.Data row
+	## An Array that contains sub-arrays.
+	## These sub-arrays represent for most of the queries the rows of the table where the query was executed.
+	## The number of sub-tables depends on the query that has been made.
+	## These sub-arrays contain as many elements as number_of_fields_in_a_row.
+	## These elements are native GDscript types that represent the data resulting from the query.
 	var data_row := []
 	
 	## This is usually a single word that identifies which SQL command was completed.
 	var command_tag: String
 	
-	
-	## Function that returns all the values ​​of a field.
-	## field_name is the name of the field on which we get the values. Can be empty if the field name is unknown. The field_name parameter is case sensitive.
+	## Returns all the values of a field.
+	## field_name is the name of the field on which we get the values.
+	## Can be empty if the field name is unknown.
+	## The field_name parameter is case sensitive.
 	func get_field_values(field_name: String) -> Array:
 		var values := []
 		
@@ -304,9 +348,12 @@ class PostgreSQLQueryResult:
 			values.append(data[fields_index])
 		
 		return values
-
-
-	## Returns the object ID of the data type of the field. field_name is the name of the field whose type we get. Can return -1 if the field name is unknown. The field_name parameter is case sensitive.
+	
+	
+	## Returns the object ID of the data type of the field.
+	## field_name is the name of the field whose type we get.
+	## Can return -1 if the field name is unknown.
+	## The field_name parameter is case sensitive.
 	func field_data_type(field_name: String) -> int:
 		for i in number_of_fields_in_a_row:
 			if row_description[i]["field_name"] == field_name:
@@ -383,6 +430,8 @@ func reponce_parser(response: PoolByteArray):
 			'D':
 				### DataRow ###
 				
+				# Identifies the message as a data row.
+				
 				# Number of column values ​​that follow (can be zero).
 				var number_of_columns = response_buffer.subarray(5, 6)
 				number_of_columns.invert()
@@ -395,6 +444,7 @@ func reponce_parser(response: PoolByteArray):
 				var cursor := 0
 				var row := []
 				
+				# Next, the following pair of fields appear for each column.
 				for i in number_of_columns:
 					var value_length = response_buffer.subarray(cursor + 7, cursor + 10)
 					value_length.invert()
@@ -436,6 +486,7 @@ func reponce_parser(response: PoolByteArray):
 										push_error("[PostgreSQLClient:%d] The backend sent an invalid BOOLEAN object. Column value is not recognized: '%c'." % [get_instance_id(), value_column])
 										
 										close(false)
+										return
 							DataTypePostgreSQL.SMALLINT, DataTypePostgreSQL.INTEGER, DataTypePostgreSQL.BIGINT:
 								### SMALLINT or INTEGER or BIGINT ###
 								
@@ -734,7 +785,7 @@ func reponce_parser(response: PoolByteArray):
 				### EmptyQueryResponse ###
 				
 				# Identifies the message as a response to an empty query string. (This substitutes for CommandComplete.)
-				print("EmptyQueryResponse")
+				pass
 			'K':
 				### BackendKeyData ####
 				
@@ -781,7 +832,7 @@ func reponce_parser(response: PoolByteArray):
 					2:
 						### AuthenticationKerberosV5 ###
 						
-						print("AuthenticationKerberosV5")
+						# No support
 						close(false)
 					3:
 						### AuthenticationCleartextPassword ###
@@ -800,40 +851,40 @@ func reponce_parser(response: PoolByteArray):
 					6:
 						### AuthenticationSCMCredential ###
 						
-						print("AuthenticationSCMCredential")
+						# No support
 						close(false)
 					7:
 						### AuthenticationGSS ###
 						
-						print("AuthenticationGSS")
+						# No support
 						close(false)
 					8:
 						### AuthenticationGSSContinue ###
 						
-						print("AuthenticationGSSContinue")
+						# No support
 						close(false)
 					9:
 						### AuthenticationSSPI ###
 						
-						print("AuthenticationSSPI")
+						# No support
 						close(false)
 					10:
 						### AuthenticationSASL ###
 						
-						print("AuthenticationSASL")
+						# No support
 						close(false)
 					11:
 						### AuthenticationSASLContinue ###
 						
-						print("AuthenticationSASLContinue")
+						# No support
 						close(false)
 					12:
 						### AuthenticationSASLFinal ###
 						
-						print("AuthenticationSASLFinal")
+						# No support
 						close(false)
 					_:
-						push_error("[PostgreSQLClient:%d] Code d'autenfication inconnu" % [get_instance_id()])
+						push_error("[PostgreSQLClient:%d] Unknown authentication code." % [get_instance_id()])
 						
 						close(false)
 			'S':
@@ -872,7 +923,7 @@ func reponce_parser(response: PoolByteArray):
 						field_name += char(octet)
 						
 						# If we get to the end of the chain, we get out of the loop.
-						if !octet:
+						if not octet:
 							break
 					
 					cursor += len(field_name)
@@ -1003,12 +1054,12 @@ func reponce_parser(response: PoolByteArray):
 				### NoData ###
 				
 				# Identifies the message as a no-data indicator.
-				print("NoData")
+				pass
 			's':
 				### ReadyForQuery ###
 				
 				#Identifies the message as a portal-suspended indicator. Note this only appears if an Execute message's row-count limit was reached.
-				print("ReadyForQuery")
+				pass
 			't':
 				### ParameterDescription ###
 				
@@ -1074,17 +1125,17 @@ func reponce_parser(response: PoolByteArray):
 				### ParseComplete ###
 				
 				# Identifies the message as a Parse-complete indicator.
-				print("ParseComplete")
+				pass
 			'2':
 				### BindComplete ###
 				
 				# Identifies the message as a Bind-complete indicator.
-				print("BindComplete")
+				pass
 			'3':
 				### CloseComplete ###
 				
 				# Identifies the message as a Close-complete indicator.
-				print("CloseComplete")
+				pass
 			var message_type:
 				# We close the connection with the backend if the type of message is not recognized.
 				push_error("[PostgreSQLClient:%d] The type of message envoyer pas le backend is not recognized (%c)." % [get_instance_id(), message_type])
@@ -1096,18 +1147,3 @@ func reponce_parser(response: PoolByteArray):
 			response_buffer = response_buffer.subarray(message_length + 1, -1)
 		else:
 			response_buffer = PoolByteArray()
-
-
-static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int) -> Array:
-	var array := []
-	var from := 0
-	var to := 0
-	
-	for byte in pool_byte_array:
-		if byte == delimiter:
-			array.append(pool_byte_array.subarray(from, to))
-			from = to + 1
-		
-		to += 1
-		
-	return array
