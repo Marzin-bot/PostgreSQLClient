@@ -33,6 +33,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | Type | Method |
 | --- | --- |
 | `Error` | connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30) |
+| `Status` | get_status() |
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
@@ -48,6 +49,15 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | connection_established() |
 
 **ENUMARATIONS:**
+
+`enum` Status
+
+- STATUS_NONE = 0 --- A status representing a `PostgreSQLClient` that is disconnected.
+- STATUS_CONNECTING = 1, --- A status representing a `PostgreSQLClient` that is connecting to a host.
+- STATUS_CONNECTED = 2, --- A status representing a `PostgreSQLClient` that is connected to a host.
+- STATUS_ERROR = 3, --- A status representing a `PostgreSQLClient` in error state.
+
+---
 
 `enum` DataTypePostgreSQL
 
@@ -114,6 +124,12 @@ The `ssl` parameter is unstable, therefore do not pass to `true`. The problem wi
 
 Allows to send an SQL string to the backend that should run.
 The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (sof in exceptional cases).
+
+---
+
+- `Status`  get_status()
+
+Returns the status of the connection (see the Status enumeration). 
 
 ---
 
@@ -243,7 +259,6 @@ Example return value:
 There are 3 rows.
 Each row contains the value of 2 fields: The row identifier and a character string.
 
-/!\\  At the moment, it doesn't only return native types! this will be the case in the future version! this is one of the first mistakes I made while writing PostgreSQLClient.  /!\\
 
 **Table of type PostgreSQL equivalent to Godot**
 | Types postgres | Type Godot |
@@ -260,7 +275,6 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 | `line`, `circle` | `Vector3` |
 
 Note:
-- JSON types will return a `String` instead of a `JSONParseResult` in a future version.
 - Not all PostgreSQL types are supported yet.
 
 ---
