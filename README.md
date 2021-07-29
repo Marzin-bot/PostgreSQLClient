@@ -37,6 +37,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
 | `void` | set_ssl_connection() |
+| `void` | poll() |
 
 **SIGNALS:**
 
@@ -133,6 +134,13 @@ Has no effect if the frontend is not already connected to the backend.
 - `void`  set_ssl_connection()
 
 Not working at the moment, don't use it. will be subject to change in future versions.
+
+---
+
+- `void`  poll()
+
+Poll the connection to check for incoming messages.
+Ideally, it should be called before `PostgreSQLClient.execute()` for it to work properly and called frequently in a loop.
 
 ---
 
