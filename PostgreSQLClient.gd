@@ -4,7 +4,7 @@
 
 extends Object
 
-## Godot PostgreSQL Client is a GDscript script / class that allows you to connect to a Postgres backend and run SQL commands there.
+## Godot PostgreSQL Client is a GDscript script/class that allows you to connect to a Postgres backend and run SQL commands there.
 ## It is able to send data and receive it from the backend. Useful for managing player user data on a multiplayer game, by saving a large amount of data on a dedicated Postgres server from GDscript.
 ## The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms.
 class_name PostgreSQLClient
@@ -17,18 +17,31 @@ var parameter_status := {}
 ## Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend.
 const PROTOCOL_VERSION := 3.0
 
-# not using
-var is_connected_to_host := false
+## Enemeration the statuts of the connection.
+enum Status {
+	STATUS_NONE,
+	STATUS_CONNECTING,
+	STATUS_CONNECTED,
+	STATUS_ERROR,
+}
 
-# Determines if we "authenticate" to the server.
-var authentication := false
+# The statut of the connection.
+var status = Status.STATUS_NONE setget set_status, get_status
+
+## Returns the status of the connection (enumeration Status). 
+func get_status() -> int:
+	return status
+
+func set_status(_value) -> void:
+	# The value of the "status" variable can only be modified locally.
+	pass
 
 var password_global: String
 var user_global: String
 
 var client := StreamPeerTCP.new()
 var peerstream := PacketPeerStream.new()
-#var ssl = StreamPeerSSL.new()
+var stream_peer_ssl = StreamPeerSSL.new()
 
 var peer
 func _init() -> void:
@@ -50,9 +63,6 @@ signal connection_error
 signal connection_established
 
 
-# True when the server is ready to receive new data.
-var rep = true
-
 ################## No use at the moment ###############
 ## The process ID of this backend.
 var process_backend_id: int
@@ -63,12 +73,12 @@ var process_backend_secret_key: int
 
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
-	if authentication:
-		close()
+	if status == Status.STATUS_CONNECTED:
+		close(false)
 	
 	var regex = RegEx.new()
 	# https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
@@ -80,6 +90,7 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 		if ssl:
 			### SSLRequest ###
 			set_ssl_connection()
+			stream_peer_ssl.connect_to_stream(peer)
 		
 		### StartupMessage ###
 		var startup_message = request("", "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
@@ -93,31 +104,11 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 		if result.strings[4]:
 			port = int(result.strings[4])
 		
-		#ssl.connect_to_stream(peer)
 		error = client.connect_to_host(result.strings[3], port)
 		
-		while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and error == OK:
-			if client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-				# Get the fist message of server.
-				if rep:
-					peer.put_data(startup_message)
-					rep = false
-				
-				var reponce = peer.get_data(peer.get_available_bytes())
-				
-				if reponce[0] == OK and reponce[1].size():
-					var servire = reponce_parser(reponce[1])
-					
-					if !authentication:
-						peer.put_data(servire)
-					else:
-						# Once logged in, the database password and username are deleted from memory for security reasons.
-						password_global = ""
-						user_global = ""
-						
-						emit_signal("connection_established")
-						
-						break
+		# Get the fist message of server.
+		if error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			peer.put_data(startup_message)
 	
 	return error
 
@@ -127,7 +118,7 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 ## If false, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
 ## Has no effect if the frontend is not already connected to the backend.
 func close(clean_closure := true) -> void:
-	if authentication:
+	if status == Status.STATUS_CONNECTED:
 		if clean_closure:
 			### Terminate ###
 			
@@ -139,11 +130,11 @@ func close(clean_closure := true) -> void:
 		
 		parameter_status = {}
 		
-		authentication = false
+		status = Status.STATUS_NONE
 		
 		emit_signal("connection_closed", clean_closure)
 	else:
-		push_warning("[PostgreSQLClient:%d] Le fontend étai déjà déconnecter du frontend au moment de l'appel de close()." % [get_instance_id()])
+		push_warning("[PostgreSQLClient:%d] The fontend was already disconnected from the backend when calling close()." % [get_instance_id()])
 
 
 ## Allows to send an SQL string to the backend that should run.
@@ -151,7 +142,7 @@ func close(clean_closure := true) -> void:
 ## Returns an Array of PostgreSQLQueryResult. (Can be empty)
 ## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (sof in exceptional cases).
 func execute(sql: String) -> Array:
-	if authentication:
+	if status == Status.STATUS_CONNECTED:
 		peer.put_data(request('Q', sql.to_utf8() + PoolByteArray([0])))
 		
 		while client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
@@ -192,7 +183,33 @@ func set_ssl_connection():
 	
 	# The SSL request code.
 	# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-	buffer.put_u32(12345679)
+	buffer.put_data(get_32bit_invert(80877103))
+	
+	#for char_number in [4, 210, 22, 47]:
+	#	buffer.put_data(PoolByteArray([4, 210, 22, 47]))
+	
+	peer.put_data(buffer.data_array.subarray(4, -1))
+
+
+##### No use #####
+## Upgrade the connexion to GSSAPI.
+func set_gssapi_connection():
+	### GSSENCRequest ###
+	
+	var buffer := StreamPeerBuffer.new()
+	
+	# Length of message contents in bytes, including self.
+	buffer.put_u32(8)
+	
+	var message_length := buffer.data_array
+	
+	message_length.invert()
+	
+	buffer.put_data(message_length)
+	
+	# The GSSAPI Encryption request code.
+	# The value is chosen to contain 1234 in the most significant 16 bits, and 5680 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+	buffer.put_data(get_32bit_invert(80877104))
 	
 	peer.put_data(buffer.data_array.subarray(4, -1))
 
@@ -201,7 +218,7 @@ func set_ssl_connection():
 func rollback(process_id: int, process_key: int) -> void:
 	### CancelRequest ###
 	
-	if authentication:
+	if status == Status.STATUS_CONNECTED:
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
@@ -215,7 +232,7 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		# The cancel request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_u32(12345678)
+		buffer.put_data(get_32bit_invert(80877102))
 		
 		# The process ID of the target backend.
 		buffer.put_u32(process_id)
@@ -223,13 +240,23 @@ func rollback(process_id: int, process_key: int) -> void:
 		# The secret key for the target backend.
 		buffer.put_u32(process_key)
 		
+		
 		peer.put_data(buffer.data_array.subarray(4, -1))
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
 
-var valide = false
+func poll() -> void:
+	if not status == Status.STATUS_CONNECTED and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		var reponce = peer.get_data(peer.get_available_bytes())
+		
+		if reponce[0] == OK and reponce[1].size():
+			var servire = reponce_parser(reponce[1])
+			
+			peer.put_data(servire)
 
+
+var valide = false
 func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
 	var buffer := StreamPeerBuffer.new()
@@ -532,11 +559,13 @@ func reponce_parser(response: PoolByteArray):
 							DataTypePostgreSQL.JSON, DataTypePostgreSQL.JSONB:
 								### JSON or JSONB ###
 								
-								# The type returned is JSONParseResult.
-								var json = JSON.parse(value_data.get_string_from_utf8())
+								# The type returned is String.
+								var json = value_data.get_string_from_utf8()
 								
-								if json.error_string:
-									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSON/JSONB object: %s (Error line: %d)" % [get_instance_id(), json.error_string, json.error_line])
+								var json_error := validate_json(json)
+								
+								if json_error:
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSON/JSONB object: (Error: %d)" % [get_instance_id(), json_error])
 									
 									close(false)
 									return
@@ -739,7 +768,7 @@ func reponce_parser(response: PoolByteArray):
 					match field_type_id:
 						'S':
 							if value == "FATAL":
-								authentication = false
+								status == Status.STATUS_NONE
 								
 								emit_signal("connection_closed", true)
 							
@@ -828,7 +857,7 @@ func reponce_parser(response: PoolByteArray):
 					0:
 						### AuthenticationOk ###
 						
-						authentication = true
+						status = Status.STATUS_CONNECTING
 					2:
 						### AuthenticationKerberosV5 ###
 						
@@ -1033,6 +1062,16 @@ func reponce_parser(response: PoolByteArray):
 				
 				datas_command_sql = []
 				response_buffer = PoolByteArray()
+				
+				
+				if status == Status.STATUS_CONNECTING:
+					status = Status.STATUS_CONNECTED
+					print("dfsbgdfbdfbdfbdfbd")
+					# Once logged in, the database password and username are deleted from memory for security reasons.
+					password_global = ""
+					user_global = ""
+					
+					emit_signal("connection_established")
 				
 				return data_returned
 			'c':
