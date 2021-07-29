@@ -17,6 +17,10 @@ func _init() -> void:
 	_error = database.connect_to_host("postgresql://%s:%s@%s:%d/%s" % [USER, PASSWORD, HOST, PORT, DATABASE])
 
 
+func _physics_process(_delta: float) -> void:
+	database.poll()
+
+
 func _executer() -> void:
 	print(database.parameter_status)
 	
