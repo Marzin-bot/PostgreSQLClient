@@ -73,7 +73,7 @@ var process_backend_secret_key: int
 
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
