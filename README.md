@@ -267,7 +267,7 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 | `smallint`, `integer`, `bigint` | `int` |
 | `real`, `double precision` | `float` |
 | `text` | `String` |
-| `json`, `jsonb` | `JSONParseResult` |
+| `json`, `jsonb` | `String` |
 | `bitea` | `PoolByteArray` |
 | `point` | `Vector2` |
 | `box` | `Rect2` |
