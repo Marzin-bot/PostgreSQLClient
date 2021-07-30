@@ -53,28 +53,28 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 `enum` Status
 
 - STATUS_NONE = 0 --- A status representing a `PostgreSQLClient` that is disconnected.
-- STATUS_CONNECTING = 1, --- A status representing a `PostgreSQLClient` that is connecting to a host.
-- STATUS_CONNECTED = 2, --- A status representing a `PostgreSQLClient` that is connected to a host.
-- STATUS_ERROR = 3, --- A status representing a `PostgreSQLClient` in error state.
+- STATUS_CONNECTING = 1 --- A status representing a `PostgreSQLClient` that is connecting to a host.
+- STATUS_CONNECTED = 2 --- A status representing a `PostgreSQLClient` that is connected to a host.
+- STATUS_ERROR = 3 --- A status representing a `PostgreSQLClient` in error state.
 
 ---
 
 `enum` DataTypePostgreSQL
 
 - BOOLEAN = 16 --- Postgresql data type of type `boolean`.
-- SMALLINT = 21, --- Postgresql data type of type `smallint`.
-- INTEGER = 23, --- Postgresql data type of type `integer`.
-- BIGINT = 20, --- Postgresql data type of type `bigint`.
-- REAL = 700, --- Postgresql data type of type `real`.
+- SMALLINT = 21 --- Postgresql data type of type `smallint`.
+- INTEGER = 23 --- Postgresql data type of type `integer`.
+- BIGINT = 20 --- Postgresql data type of type `bigint`.
+- REAL = 700 --- Postgresql data type of type `real`.
 - DOUBLE_PRECISION = 701, --- Postgresql data type of type `double precision`.
-- TEXT = 25, --- Postgresql data type of type `text`.
-- JSON = 114, --- Postgresql data type of type `json`.
-- JSONB = 3802, --- Postgresql data type of type `jsonb`.
-- BITEA = 17, --- Postgresql data type of type `bitea`.
-- POINT = 600, --- Postgresql data type of type `point`.
-- BOX = 603, --- Postgresql data type of type `box`.
-- LSEG = 601, --- Postgresql data type of type `lseg`.
-- LINE = 628, --- Postgresql data type of type `line`.
+- TEXT = 25 --- Postgresql data type of type `text`.
+- JSON = 114 --- Postgresql data type of type `json`.
+- JSONB = 3802 --- Postgresql data type of type `jsonb`.
+- BITEA = 17 --- Postgresql data type of type `bitea`.
+- POINT = 600 --- Postgresql data type of type `point`.
+- BOX = 603 --- Postgresql data type of type `box`.
+- LSEG = 601 --- Postgresql data type of type `lseg`.
+- LINE = 628 --- Postgresql data type of type `line`.
 - CIRCLE = 718 --- Postgresql data type of type `circle`.
 
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release.
