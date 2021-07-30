@@ -1068,7 +1068,7 @@ func reponce_parser(response: PoolByteArray):
 				
 				if status == Status.STATUS_CONNECTING:
 					status = Status.STATUS_CONNECTED
-					print("dfsbgdfbdfbdfbdfbd")
+					
 					# Once logged in, the database password and username are deleted from memory for security reasons.
 					password_global = ""
 					user_global = ""
