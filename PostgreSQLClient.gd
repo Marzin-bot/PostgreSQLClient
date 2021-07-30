@@ -19,16 +19,16 @@ const PROTOCOL_VERSION := 3.0
 
 ## Enemeration the statuts of the connection.
 enum Status {
-	STATUS_NONE,
-	STATUS_CONNECTING,
-	STATUS_CONNECTED,
-	STATUS_ERROR
+	STATUS_NONE, #STATUS_DISCONNECTED ## A status representing a PostgreSQLClient that is disconnected.
+	STATUS_CONNECTING, ## A status representing a PostgreSQLClient that is connecting to a host.
+	STATUS_CONNECTED, ## A status representing a PostgreSQLClient that is connected to a host.
+	STATUS_ERROR ## A status representing a PostgreSQLClient in error state.
 }
 
 # The statut of the connection.
 var status = Status.STATUS_NONE setget set_status, get_status
 
-## Returns the status of the connection (enumeration Status). 
+## Returns the status of the connection (see the Status enumeration).
 func get_status() -> int:
 	return status
 
@@ -73,7 +73,7 @@ var process_backend_secret_key: int
 
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
@@ -246,6 +246,8 @@ func rollback(process_id: int, process_key: int) -> void:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
 
+## Poll the connection to check for incoming messages.
+## Ideally, it should be called before PostgreSQLClient.execute() for it to work properly and called frequently in a loop.
 func poll() -> void:
 	if not status == Status.STATUS_CONNECTED and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 		var reponce = peer.get_data(peer.get_available_bytes())
