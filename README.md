@@ -66,7 +66,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - INTEGER = 23 --- Postgresql data type of type `integer`.
 - BIGINT = 20 --- Postgresql data type of type `bigint`.
 - REAL = 700 --- Postgresql data type of type `real`.
-- DOUBLE_PRECISION = 701, --- Postgresql data type of type `double precision`.
+- DOUBLE_PRECISION = 701 --- Postgresql data type of type `double precision`.
 - TEXT = 25 --- Postgresql data type of type `text`.
 - JSON = 114 --- Postgresql data type of type `json`.
 - JSONB = 3802 --- Postgresql data type of type `jsonb`.
