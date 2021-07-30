@@ -255,7 +255,8 @@ func poll() -> void:
 		if reponce[0] == OK and reponce[1].size():
 			var servire = reponce_parser(reponce[1])
 			
-			peer.put_data(servire)
+			if servire:
+				peer.put_data(servire)
 
 
 var valide = false
