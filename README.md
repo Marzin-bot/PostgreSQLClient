@@ -10,7 +10,7 @@ Currently, the script is not stable and lacks features. So it is not recommended
 INSTALLATION PROCEDURE:
 =======================
 It is assumed that you have installed the latest version of PostgreSQL and that you have created a database.
-Access Godot's AssetLib catalog. Include the PostgreSQLClient.gd file in your project (only this file is really needed).
+Access Godot's AssetLib catalog search for PostgreSQLClient. Include the PostgreSQLClient.gd file in your project (only this file is really needed).
 
 OR
 
