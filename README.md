@@ -123,7 +123,7 @@ The `ssl` parameter is unstable, therefore do not pass to `true`. The problem wi
 - `Array`  execute(sql: String)
 
 Allows to send an SQL string to the backend that should run.
-The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (sof in exceptional cases).
+The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (except in exceptional cases).
 
 ---
 
@@ -141,7 +141,7 @@ Do not use because it is too unstable, will be subject to modification in future
 
 - `void`  close(clean_closure: bool = true)
 
-Allows you to close the connection with the backend. If clean_closure is `true`, the frontend will notify the backend that it requests to close the connection. If `false`, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
+Allows you to close the connection with the backend. If clean_closure is `true`, the frontend will notify the backend that it requests to close the connection. If `false`, the frontend forcibly closes the connection without notifying the backend (not recommended except in exceptional cases).
 
 Has no effect if the frontend is not already connected to the backend.
 
