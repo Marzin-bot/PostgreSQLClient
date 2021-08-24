@@ -1,9 +1,10 @@
 # PostgreSQLClient for Godot Engine (GDscript)
-
-<img src="./icon.svg">
+<p align="center">
+	<img src="./icon.svg">
+</p>
 Godot PostgreSQL Client is a GDscript script / class that allows you to connect to a Postgres backend and run SQL commands there. It is able to send data and receive it from the backend. Useful for managing player user data on a multiplayer game, by saving a large amount of data on a dedicated Postgres server from GDscript.
 
-The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms. You can see a taste of using the Postgresql connector for Godot in the "Helloworld.gd" file.
+The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms. You can see a taste of using the Postgresql connector for Godot 3.x in the "Helloworld.gd" file.
 
 Currently, the script is not stable and lacks features. So it is not recommended to use it in production at this time however you can test it.
 
@@ -17,6 +18,16 @@ OR
 Download the file "PostgreSQLClient.gd" then include it in your Godot project folders ("res: //").
 
 The PostgreSQLClient class should now be accessible from any GDscript script. Otherwise, set the script to "Auto load" in your project settings.
+
+HOW TO USE?:
+====================================
+Find an example of minimalist use in the <a href="./Helloworld.gd">Helloworld.gd</a> file. Other examples will be provided later.
+
+You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (finepointcgi)</a> here:
+<p align="center">
+	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
+</p>
+
 
 PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 ====================================
