@@ -23,7 +23,7 @@ HOW TO USE?:
 ====================================
 Find an example of minimalist use in the <a href="./Helloworld.gd">Helloworld.gd</a> file. Other examples will be provided later.
 
-You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum's (finepointcgi)</a> video tutorial here:
+You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (finepointcgi)</a> video tutorial here:
 <p align="center">
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
