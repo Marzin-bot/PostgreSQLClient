@@ -6,7 +6,7 @@ const USER = "Samuel"
 const PASSWORD = "my_password"
 const HOST = "localhost"
 const PORT = 5432 # Default postgres port
-const DATABASE = "my_database"
+const DATABASE = "my_database" # Database name
 
 
 func _init() -> void:
