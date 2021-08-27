@@ -57,13 +57,14 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | --- |
 | connection_closed(was_clean_close: bool) |
 | connection_error() |
+| authentication_error(error_object: Dictionnary) |
 | connection_established() |
 
 **ENUMARATIONS:**
 
 `enum` Status
 
-- STATUS_NONE = 0 --- A status representing a `PostgreSQLClient` that is disconnected.
+- STATUS_DISCONNECTED = 0 --- A status representing a `PostgreSQLClient` that is disconnected.
 - STATUS_CONNECTING = 1 --- A status representing a `PostgreSQLClient` that is connecting to a host.
 - STATUS_CONNECTED = 2 --- A status representing a `PostgreSQLClient` that is connected to a host.
 - STATUS_ERROR = 3 --- A status representing a `PostgreSQLClient` in error state.
@@ -118,7 +119,7 @@ Example of a typical value that a backend might return. Values may differ depend
 ---
 
 **Method Descriptions**
-- `Error`  connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30)
+- `Error`  connect_to_host(url: String, ssl: bool = true, connect_timeout: int = 30)
 
 Allows you to connect to a Postgresql backend at the specified `url`.
 
@@ -127,7 +128,9 @@ All other PostgreSQL URL syntaxes specified in this page [https://www.postgresql
 
 Noted that the default port for PostgreSQL is `5432`.
 
-The `ssl` parameter is unstable, therefore do not pass to `true`. The problem will be fixed in the future version.
+If SSL is True, the frontend will try to establish a secure SSL / TLS connection with the backend.
+If the server is unfavorable, the connection will fail. Most of the time, all PostgreSQL backends are good at making an ss / tls connection.
+Old servers can be an exception. Passing the parameter to true is advisable for production use.
 
 ---
 
@@ -191,7 +194,7 @@ Trigger when the connection between the frontend and the backend is established.
 
 ---
 
-DOCUMENTATION PostgreSQLQueryResult (NON FINALISÉE):
+DOCUMENTATION PostgreSQLQueryResult:
 ====================================================
 **Descriptions**
 
