@@ -80,9 +80,19 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - REAL = 700 --- Postgresql data type of type `real`.
 - DOUBLE_PRECISION = 701 --- Postgresql data type of type `double precision`.
 - TEXT = 25 --- Postgresql data type of type `text`.
+- CHARACTER = 1042 --- Postgresql data type of type `character` alias `char`.
+- CHARACTER_VARYING = 3802 --- Postgresql data type of type `character varying` alias `varchar`.
 - JSON = 114 --- Postgresql data type of type `json`.
 - JSONB = 3802 --- Postgresql data type of type `jsonb`.
+- XML = 142 --- Postgresql data type of type `xml`.
 - BITEA = 17 --- Postgresql data type of type `bitea`.
+- CIDR = 650 --- Postgresql data type of type `cidr`.
+- INET = 869 --- Postgresql data type of type `inet`.
+- MACADDR = 829 --- Postgresql data type of type `macaddr`.
+- MACADDR8 = 774 --- Postgresql data type of type `macaddr8`.
+- BIT = 1560 --- Postgresql data type of type `bit`.
+- BIT_VARYING = 1562 --- Postgresql data type of type `bit varying`.
+- UUID = 2950 --- Postgresql data type of type `uuid`.
 - POINT = 600 --- Postgresql data type of type `point`.
 - BOX = 603 --- Postgresql data type of type `box`.
 - LSEG = 601 --- Postgresql data type of type `lseg`.
@@ -287,8 +297,7 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 | `null` | `null` |
 | `smallint`, `integer`, `bigint` | `int` |
 | `real`, `double precision` | `float` |
-| `text` | `String` |
-| `json`, `jsonb` | `String` |
+| `text`, `character` alias `char`, `character varying` alias `varchar`, `json`, `jsonb`, `xml`, `cidr`, `inet`, `macaddr`, `macaddr8`, `bit`, `bit varying`, `uuid` | `String` |
 | `bitea` | `PoolByteArray` |
 | `point` | `Vector2` |
 | `box` | `Rect2` |
