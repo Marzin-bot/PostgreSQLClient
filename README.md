@@ -188,6 +188,13 @@ Do not listen to this signal, does not work. will be subject to change see remov
 
 ---
 
+authentication_error(error_object: Dictionnary)
+
+Triggered when the authentication process failed during contact with the target backend.
+The error_object parameter is a dictionary that contains various information during the nature of the error.
+
+---
+
 - connection_established()
 
 Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
