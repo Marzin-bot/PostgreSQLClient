@@ -1,7 +1,7 @@
 # Lience MIT
 # Written by Samuel MARZIN
 # Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
-
+# Command pour suprimer tout les versions de postgres sur Ubuntu: $sudo apt-get --purge remove postgresql*
 extends Object
 
 ## Godot PostgreSQL Client is a GDscript script/class that allows you to connect to a Postgres backend and run SQL commands there.
@@ -19,14 +19,14 @@ const PROTOCOL_VERSION := 3.0
 
 ## Enemeration the statuts of the connection.
 enum Status {
-	STATUS_NONE, #STATUS_DISCONNECTED ## A status representing a PostgreSQLClient that is disconnected.
+	STATUS_DISCONNECTED, ## A status representing a PostgreSQLClient that is disconnected.
 	STATUS_CONNECTING, ## A status representing a PostgreSQLClient that is connecting to a host.
 	STATUS_CONNECTED, ## A status representing a PostgreSQLClient that is connected to a host.
 	STATUS_ERROR ## A status representing a PostgreSQLClient in error state.
 }
 
 # The statut of the connection.
-var status = Status.STATUS_NONE setget set_status, get_status
+var status = Status.STATUS_DISCONNECTED setget set_status, get_status
 
 ## Returns the status of the connection (see the Status enumeration).
 func get_status() -> int:
@@ -35,6 +35,7 @@ func get_status() -> int:
 func set_status(_value) -> void:
 	# The value of the "status" variable can only be modified locally.
 	pass
+
 
 var password_global: String
 var user_global: String
@@ -56,12 +57,18 @@ func _init() -> void:
 signal connection_closed(was_clean_close)
 
 # No use
-signal connection_error
+signal connection_error() # del /!\
+
+## Triggered when the authentication process failed during contact with the target backend.
+## The error_object parameter is a dictionary that contains various information during the nature of the error.
+signal authentication_error(error_object)
+
 
 ## Trigger when the connection between the frontend and the backend is established.
 ## This is usually a good time to start making requests to the backend with execute ().
 signal connection_established
 
+signal data_received
 
 ################## No use at the moment ###############
 ## The process ID of this backend.
@@ -71,9 +78,14 @@ var process_backend_id: int
 ## The secret key of this backend.
 var process_backend_secret_key: int
 
+var status_ssl = 0
+
+var global_url = ""
+
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
+	global_url = url
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
@@ -87,11 +99,6 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	var result = regex.search(url)
 	
 	if result:
-		if ssl:
-			### SSLRequest ###
-			set_ssl_connection()
-			stream_peer_ssl.connect_to_stream(peer)
-		
 		### StartupMessage ###
 		var startup_message = request("", "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
 		
@@ -104,11 +111,20 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 		if result.strings[4]:
 			port = int(result.strings[4])
 		
-		error = client.connect_to_host(result.strings[3], port)
-		
-		# Get the fist message of server.
-		if error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-			peer.put_data(startup_message)
+		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+			stream_peer_ssl.put_data(startup_message)
+		else:
+			if not client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_NONE:
+				error = client.connect_to_host(result.strings[3], port)
+			
+			# Get the fist message of server.
+			if error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+				if ssl:
+					### SSLRequest ###
+					
+					set_ssl_connection()
+				else:
+					peer.put_data(startup_message)
 	
 	return error
 
@@ -119,18 +135,26 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 ## Has no effect if the frontend is not already connected to the backend.
 func close(clean_closure := true) -> void:
 	if status == Status.STATUS_CONNECTED:
-		if clean_closure:
-			### Terminate ###
-			
-			# Identifies the message as a termination.
-			
-			peer.put_data(request('X', PoolByteArray()))
+		### Terminate ###
 		
-		client.disconnect_from_host()
+		# Identifies the message as a termination.
+		
+		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+			# Deconnection ssl
+			if clean_closure:
+				stream_peer_ssl.put_data(request('X', PoolByteArray()))
+			
+			stream_peer_ssl.disconnect_from_stream()
+		else:
+			if clean_closure:
+				peer.put_data(request('X', PoolByteArray()))
+			
+			client.disconnect_from_host()
 		
 		parameter_status = {}
 		
-		status = Status.STATUS_NONE
+		status = Status.STATUS_DISCONNECTED
+		status_ssl = 0
 		
 		emit_signal("connection_closed", clean_closure)
 	else:
@@ -143,23 +167,31 @@ func close(clean_closure := true) -> void:
 ## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (sof in exceptional cases).
 func execute(sql: String) -> Array:
 	if status == Status.STATUS_CONNECTED:
-		peer.put_data(request('Q', sql.to_utf8() + PoolByteArray([0])))
+		var request := request('Q', sql.to_utf8() + PoolByteArray([0]))
 		
-		while client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-			if client.is_connected_to_host():
-				# ssl.poll()
-				
-				var reponce = peer.get_data(peer.get_available_bytes())
-				
-				if reponce[0] == OK and reponce[1].size():
-					
-					var result = reponce_parser(reponce[1])
-					if result != null:
-						return result
-				
+		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+			stream_peer_ssl.put_data(request)
+		else:
+			peer.put_data(request)
+		
+		while client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED:
+			var reponce := [OK, PoolByteArray()]
+			
+			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+				stream_peer_ssl.poll()
+				if stream_peer_ssl.get_available_bytes():
+					reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes()) # I don't know why it crashes when this value (stream_peer_ssl.get_available_bytes()) is equal to 0 so I pass it a condition. It is probably a Godot bug.
+				else:
+					continue
 			else:
-				#disconnect
-				break
+				reponce = peer.get_data(peer.get_available_bytes())
+			
+			if reponce[0] == OK:
+				var result = reponce_parser(reponce[1])
+				if result != null:
+					return result
+			else:
+				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 	
@@ -168,50 +200,59 @@ func execute(sql: String) -> Array:
 
 ## Upgrade the connexion to SSL.
 func set_ssl_connection():
-	### SSLRequest ###
-	
-	var buffer := StreamPeerBuffer.new()
-	
-	# Length of message contents in bytes, including self.
-	buffer.put_u32(8)
-	
-	var message_length := buffer.data_array
-	
-	message_length.invert()
-	
-	buffer.put_data(message_length)
-	
-	# The SSL request code.
-	# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-	buffer.put_data(get_32bit_invert(80877103))
-	
-	#for char_number in [4, 210, 22, 47]:
-	#	buffer.put_data(PoolByteArray([4, 210, 22, 47]))
-	
-	peer.put_data(buffer.data_array.subarray(4, -1))
+	if stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_CONNECTED:
+		push_warning("[PostgreSQLClient:%d] The connection is already secured with TLS/SSL." % [get_instance_id()])
+	elif client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		### SSLRequest ###
+		
+		var buffer := StreamPeerBuffer.new()
+		
+		# Length of message contents in bytes, including self.
+		buffer.put_u32(8)
+		
+		var message_length := buffer.data_array
+		
+		message_length.invert()
+		
+		buffer.put_data(message_length)
+		
+		# The SSL request code.
+		# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+		buffer.put_data(get_32bit_invert(80877103))
+		
+		#for char_number in [4, 210, 22, 47]:
+		#	buffer.put_data(PoolByteArray([4, 210, 22, 47]))
+		
+		peer.put_data(buffer.data_array.subarray(4, -1))
+		
+		status_ssl = 1
+	else:
+		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
 
 ##### No use #####
 ## Upgrade the connexion to GSSAPI.
 func set_gssapi_connection():
 	### GSSENCRequest ###
-	
-	var buffer := StreamPeerBuffer.new()
-	
-	# Length of message contents in bytes, including self.
-	buffer.put_u32(8)
-	
-	var message_length := buffer.data_array
-	
-	message_length.invert()
-	
-	buffer.put_data(message_length)
-	
-	# The GSSAPI Encryption request code.
-	# The value is chosen to contain 1234 in the most significant 16 bits, and 5680 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-	buffer.put_data(get_32bit_invert(80877104))
-	
-	peer.put_data(buffer.data_array.subarray(4, -1))
+	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		var buffer := StreamPeerBuffer.new()
+		
+		# Length of message contents in bytes, including self.
+		buffer.put_u32(8)
+		
+		var message_length := buffer.data_array
+		
+		message_length.invert()
+		
+		buffer.put_data(message_length)
+		
+		# The GSSAPI Encryption request code.
+		# The value is chosen to contain 1234 in the most significant 16 bits, and 5680 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
+		buffer.put_data(get_32bit_invert(80877104))
+		
+		peer.put_data(buffer.data_array.subarray(4, -1))
+	else:
+		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
 
 ## This function undoes all changes made to the database since the last Commit.
@@ -249,17 +290,58 @@ func rollback(process_id: int, process_key: int) -> void:
 ## Poll the connection to check for incoming messages.
 ## Ideally, it should be called before PostgreSQLClient.execute() for it to work properly and called frequently in a loop.
 func poll() -> void:
-	if not status == Status.STATUS_CONNECTED and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-		var reponce = peer.get_data(peer.get_available_bytes())
+	if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+		stream_peer_ssl.poll()
+	
+	if client.is_connected_to_host():
+		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status_ssl == 1:
+			var response = peer.get_data(peer.get_available_bytes())
+			if response[0] == OK:
+				if not response[1].empty():
+					match char(response[1][0]):
+						'S':
+							var crypto = Crypto.new()
+							var ssl_key = crypto.generate_rsa(4096)
+							var ssl_cert = crypto.generate_self_signed_certificate(ssl_key, "CN=zenpol.com,O=Marzin Studio,C=FR")
+							stream_peer_ssl.connect_to_stream(peer, false, "", ssl_cert)
+							# stream_peer_ssl.blocking_handshake = false
+							status_ssl = 2
+						'E':
+							push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
+							
+							close(false)
+						var value:
+							push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
+							
+							close(false)
+			else:
+				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
 		
-		if reponce[0] == OK and reponce[1].size():
-			var servire = reponce_parser(reponce[1])
+		
+		if status_ssl == 2 and stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+			connect_to_host(global_url, false)
+			status_ssl = 3
+		
+		
+		if (status_ssl != 1 and status_ssl != 2) and not status == Status.STATUS_CONNECTED and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			var reponce: Array
 			
-			if servire:
-				peer.put_data(servire)
+			if status_ssl == 0:
+				reponce = peer.get_data(peer.get_available_bytes())
+			else:
+				reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes())
+			
+			if reponce[0] == OK and reponce[1].size():
+				var servire = reponce_parser(reponce[1])
+				
+				if servire:
+					if status_ssl == 0:
+						peer.put_data(servire)
+					else:
+						stream_peer_ssl.put_data(servire)
 
 
-var valide = false
+
 func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
 	var buffer := StreamPeerBuffer.new()
@@ -317,22 +399,33 @@ static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int
 
 
 enum DataTypePostgreSQL {
-	BOOLEAN = 16,
+	BOOLEAN = 16, # Alias BOOL.
 	SMALLINT = 21,
 	INTEGER = 23,
 	BIGINT = 20,
 	REAL = 700,
 	DOUBLE_PRECISION = 701,
 	TEXT = 25,
+	CHARACTER = 1042, # Alias CHAR.
+	CHARACTER_VARYING = 1043, # Alias VARCHAR.
 	JSON = 114,
 	JSONB = 3802,
+	XML = 142,
 	BITEA = 17,
+	CIDR = 650,
+	INET = 869,
+	MACADDR = 829,
+	MACADDR8 = 774,
+	BIT = 1560,
+	BIT_VARYING = 1562,
+	UUID = 2950,
 	POINT = 600,
 	BOX = 603,
 	LSEG = 601,
 	LINE = 628,
 	CIRCLE = 718
 }
+
 
 ## The PostgreSQLQueryResult class is a subclass of PostgreSQLClient which is not intended to be created manually.
 ## It represents the result of an SQL query and provides an information and method report to use the result of the query.
@@ -414,7 +507,7 @@ func reponce_parser(response: PoolByteArray):
 		var message_length = buffer.get_u32()
 		
 		# Mf the size of the buffer is not equal to the length of the message, the request is not processed immediately.
-		if response_buffer.size() < message_length + 1:
+		if response_buffer.size() < message_length + 1: # problème ssl
 			break
 		
 		# Message_type
@@ -529,31 +622,26 @@ func reponce_parser(response: PoolByteArray):
 								# The type returned is float.
 								# The result.
 								row.append(float(value_data.get_string_from_ascii()))
-							DataTypePostgreSQL.TEXT:
-								### TEXT ###
+							DataTypePostgreSQL.TEXT, DataTypePostgreSQL.CHARACTER, DataTypePostgreSQL.CHARACTER_VARYING:
+								### TEXT or CHARACTER or CHARACTER_VARYING ###
 								
 								# The type returned is String.
 								# The result.
 								row.append(value_data.get_string_from_utf8())
-							"PoolStringArray":
-								### CHARACTER ###
-								
-								# The type returned is PoolStringArray.
-								pass
 							"tsvector":
 								pass
 							"tsquery":
 								pass
-							"XML":
+							DataTypePostgreSQL.XML:
 								### XML ###
 								
-								# The type returned is XMLParser.
+								# The type returned is String.
 								var xml := XMLParser.new()
 								
 								error = xml.open_buffer(value_data)
 								if error == OK:
 									# The result.
-									row.append(xml)
+									row.append(value_data.get_string_from_utf8())
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid XML object. (Error: %d)" % [get_instance_id(), error])
 									
@@ -575,8 +663,17 @@ func reponce_parser(response: PoolByteArray):
 								else:
 									# The result.
 									row.append(json)
-							"Bit":
-								### BIT ###
+							DataTypePostgreSQL.BIT, DataTypePostgreSQL.BIT_VARYING:
+								### BIT or BIT VARYING ###
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							"BIT VARYING":
+								### BIT VARYING ###
 								pass
 							DataTypePostgreSQL.BITEA:
 								### BITEA ###
@@ -588,7 +685,7 @@ func reponce_parser(response: PoolByteArray):
 									var bitea := PoolByteArray()
 									
 									for i_hex in value_data.size() * 0.5 - 1:
-										bitea.append(("0x" + bitea_data[i_hex+2] + bitea_data[i_hex+2]).hex_to_int())
+										bitea.append(("0x" + bitea_data[i_hex + 2] + bitea_data[i_hex + 2]).hex_to_int())
 									
 									# The result.
 									row.append(bitea)
@@ -606,21 +703,43 @@ func reponce_parser(response: PoolByteArray):
 							"interval":
 								### INTERVAL ###
 								pass
-							"UUID":
+							DataTypePostgreSQL.UUID:
 								### UUID ###
-								pass
-							"cidr":
-								### CIDR ###
-								pass
-							"inet":
-								### INET ###
-								pass
-							"macaddr":
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.CIDR, DataTypePostgreSQL.INET:
+								### CIDR or INET ###
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend with the line if below...
+								#value_data.get_string_from_ascii().is_valid_ip_address()
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.MACADDR:
 								### MACADDR ###
-								pass
-							"macaddr8":
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.MACADDR8:
 								### MACADDR8 ###
-								pass
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
 							DataTypePostgreSQL.POINT:
 								### POINT ###
 								
@@ -682,7 +801,10 @@ func reponce_parser(response: PoolByteArray):
 								var result = regex.search(value_data.get_string_from_ascii())
 								if result:
 									# The result.
-									row.append(PoolVector2Array([Vector2(float(result.strings[1]), float(result.strings[2])), Vector2(float(result.strings[3]), float(result.strings[4]))]))
+									row.append(PoolVector2Array([
+										Vector2(float(result.strings[1]), float(result.strings[2])),
+										Vector2(float(result.strings[3]), float(result.strings[4]))
+									]))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid LSEG object." % [get_instance_id()])
 									
@@ -725,8 +847,6 @@ func reponce_parser(response: PoolByteArray):
 								### CIRCLE ###
 								
 								# The type returned is Vector3.
-								
-								#row.append(value_data.get_string_from_ascii())
 								var regex = RegEx.new()
 								
 								error = regex.compile("^<\\((-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)\\),(\\d+(\\.\\d+)?)>")
@@ -762,6 +882,7 @@ func reponce_parser(response: PoolByteArray):
 				print("CopyInResponse OR CopyOutResponse OR CopyBothResponse no implemented.")
 			'E', 'N':
 				### ErrorResponse or NoticeResponse ###
+				var error_object := {}
 				
 				for champ_data in split_pool_byte_array(response_buffer.subarray(5, message_length - 1), 0):
 					var champ: String = champ_data.get_string_from_ascii()
@@ -771,48 +892,59 @@ func reponce_parser(response: PoolByteArray):
 					match field_type_id:
 						'S':
 							if value == "FATAL":
-								status == Status.STATUS_NONE
+								parameter_status = {}
+								
+								status = Status.STATUS_DISCONNECTED
+								
+								status_ssl = 0
 								
 								emit_signal("connection_closed", true)
 							
-							prints("Severity:", value)
+							error_object["severity"] = value
 						'V':
-							prints("Severity no localized:", value)
+							error_object["severity_no_localized"] = value
 						'C':
-							prints("SQLSTATE code:", value)
+							error_object["SQLSTATE_code"] = value
 						'M':
-							prints("Message:", value)
+							error_object["message"] = value
 							push_error("[PostgreSQLClient:%d] %s" % [get_instance_id(), value])
 						'D':
-							prints("Detail:", value)
+							error_object["detail"] = value
 						'H':
-							prints("Hint:", value)
+							error_object["hint"] = value
 						'P':
-							prints("Position:", value)
+							error_object["position"] = value
 						'p':
-							prints("Internal position:", value)
+							error_object["internal_position"] = value
 						'q':
-							prints("Internal query:", value)
+							error_object["internal_query"] = value
 						'W':
-							prints("Where:", value)
+							error_object["where"] = value
 						's':
-							prints("Schema name:", value)
+							error_object["schema_name"] = value
 						't':
-							prints("Table name:", value)
+							error_object["table_name"] = value
 						'c':
-							prints("Column name:", value)
+							error_object["column_name"] = value
 						'd':
-							prints("Data type name:", value)
+							error_object["constraint_name"] = value
 						'n':
-							prints("Constraint name:", value)
+							error_object["constraint_name"] = value
 						'F':
-							prints("File:", value)
+							error_object["file"] = value
 						'L':
-							prints("Line:", value)
+							error_object["line"] = value
 						'R':
-							prints("Routine:", value)
+							error_object["routine"] = value
 						_:
 							close(false)
+				
+				if status != Status.STATUS_CONNECTED and error_object["severity"] == "FATAL":
+					status = Status.STATUS_ERROR
+					
+					emit_signal("authentication_error", error_object)
+				else:
+					prints("ERROR OBJECT:", error_object)
 			'I':
 				### EmptyQueryResponse ###
 				
@@ -830,6 +962,7 @@ func reponce_parser(response: PoolByteArray):
 				buffer.put_data(process_backend_id)
 				buffer.seek(4)
 				
+				# The result.
 				process_backend_id = buffer.get_u32()
 				
 				# Get the secret key of this backend.
@@ -839,10 +972,8 @@ func reponce_parser(response: PoolByteArray):
 				buffer.put_data(process_backend_secret_key)
 				buffer.seek(8)
 				
-				process_backend_secret_key = buffer.get_u32()
-				
 				# The result.
-				prints(process_backend_id, process_backend_secret_key)
+				process_backend_secret_key = buffer.get_u32()
 			'R':
 				### Authentication ###
 				
@@ -879,41 +1010,48 @@ func reponce_parser(response: PoolByteArray):
 						ctx.update((password_global + user_global).md5_buffer().hex_encode().to_ascii() + response_buffer.subarray(9, 12))
 						
 						response_buffer = PoolByteArray()
-						return request('p', "md5".to_ascii() + ctx.finish().hex_encode().to_ascii() + PoolByteArray([0]))
+						return request('p', ("md5" + ctx.finish().hex_encode()).to_ascii() + PoolByteArray([0]))
 					6:
 						### AuthenticationSCMCredential ###
 						
 						# No support
+						push_error("AuthenticationSCMCredential No support")
 						close(false)
 					7:
 						### AuthenticationGSS ###
 						
 						# No support
+						push_error("AuthenticationGSS No support")
 						close(false)
 					8:
 						### AuthenticationGSSContinue ###
 						
 						# No support
+						push_error("AuthenticationGSSContinue No support")
 						close(false)
 					9:
 						### AuthenticationSSPI ###
 						
 						# No support
+						push_error("AuthenticationSSPI No support")
 						close(false)
 					10:
 						### AuthenticationSASL ###
 						
 						# No support
+						push_error("AuthenticationSASL No support")
 						close(false)
 					11:
 						### AuthenticationSASLContinue ###
 						
 						# No support
+						push_error("AuthenticationSASLContinue No support")
 						close(false)
 					12:
 						### AuthenticationSASLFinal ###
 						
 						# No support
+						push_error("AuthenticationSASLFinal No support")
 						close(false)
 					_:
 						push_error("[PostgreSQLClient:%d] Unknown authentication code." % [get_instance_id()])
@@ -1188,4 +1326,4 @@ func reponce_parser(response: PoolByteArray):
 		if response_buffer.size() != message_length + 1:
 			response_buffer = response_buffer.subarray(message_length + 1, -1)
 		else:
-			response_buffer = PoolByteArray()
+			response_buffer.resize(0)
