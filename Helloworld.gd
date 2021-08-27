@@ -11,6 +11,7 @@ const DATABASE = "my_database" # Database name
 
 func _init() -> void:
 	var _error := database.connect("connection_established", self, "_executer")
+	_error = database.connect("authentication_error", self, "_authentication_error")
 	_error = database.connect("connection_closed", self, "_close")
 	
 	#Connection to the database
@@ -19,6 +20,10 @@ func _init() -> void:
 
 func _physics_process(_delta: float) -> void:
 	database.poll()
+
+
+func _authentication_error(error_object: Dictionary) -> void:
+	prints("Error connection to database:", error_object["message"])
 
 
 func _executer() -> void:
