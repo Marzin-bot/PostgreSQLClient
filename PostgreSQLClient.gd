@@ -1,7 +1,6 @@
 # Lience MIT
 # Written by Samuel MARZIN
 # Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
-# Command pour suprimer tout les versions de postgres sur Ubuntu: $sudo apt-get --purge remove postgresql*
 extends Object
 
 ## Godot PostgreSQL Client is a GDscript script/class that allows you to connect to a Postgres backend and run SQL commands there.
