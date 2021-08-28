@@ -174,7 +174,7 @@ Has no effect if the frontend is not already connected to the backend.
 - `void`  set_ssl_connection()
 
 Not working at the moment, don't use it. will be subject to change in future versions.
-If you want to establish a secure SSL/TLS connection with the backend, you have to do it with connect_to_host () by setting the ssl parameter to true.
+If you want to establish a secure SSL/TLS connection with the backend, you have to do it with `connect_to_host()` by setting the `ssl` parameter to `true`.
 
 ---
 
