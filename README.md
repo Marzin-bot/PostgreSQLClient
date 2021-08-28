@@ -138,8 +138,8 @@ All other PostgreSQL URL syntaxes specified in this page [https://www.postgresql
 
 Noted that the default port for PostgreSQL is `5432`.
 
-If SSL is True, the frontend will try to establish a secure SSL / TLS connection with the backend.
-If the server is unfavorable, the connection will fail. Most of the time, all PostgreSQL backends are good at making an ss / tls connection.
+If `ssl` is `true`, the frontend will try to establish a secure SSL/TLS connection with the backend.
+If the server is unfavorable, the connection will fail. Most of the time, all PostgreSQL backends are good at making an SSL/TLS connection.
 Old servers can be an exception. Passing the parameter to true is advisable for production use.
 
 ---
