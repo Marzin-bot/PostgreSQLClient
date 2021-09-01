@@ -299,10 +299,10 @@ func poll() -> void:
 				if not response[1].empty():
 					match char(response[1][0]):
 						'S':
-							var crypto = Crypto.new()
-							var ssl_key = crypto.generate_rsa(4096)
-							var ssl_cert = crypto.generate_self_signed_certificate(ssl_key, "CN=zenpol.com,O=Marzin Studio,C=FR")
-							stream_peer_ssl.connect_to_stream(peer, false, "", ssl_cert)
+							#var crypto = Crypto.new()
+							#var ssl_key = crypto.generate_rsa(4096)
+							#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
+							stream_peer_ssl.connect_to_stream(peer)
 							# stream_peer_ssl.blocking_handshake = false
 							status_ssl = 2
 						'E':
@@ -398,7 +398,7 @@ static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int
 
 
 enum DataTypePostgreSQL {
-	BOOLEAN = 16, # Alias BOOL.
+	BOOLEAN = 16,
 	SMALLINT = 21,
 	INTEGER = 23,
 	BIGINT = 20,
@@ -995,6 +995,8 @@ func reponce_parser(response: PoolByteArray):
 						### AuthenticationKerberosV5 ###
 						
 						# No support
+						push_error("AuthenticationKerberosV5 No support")
+						
 						close(false)
 					3:
 						### AuthenticationCleartextPassword ###
@@ -1015,42 +1017,49 @@ func reponce_parser(response: PoolByteArray):
 						
 						# No support
 						push_error("AuthenticationSCMCredential No support")
+						
 						close(false)
 					7:
 						### AuthenticationGSS ###
 						
 						# No support
 						push_error("AuthenticationGSS No support")
+						
 						close(false)
 					8:
 						### AuthenticationGSSContinue ###
 						
 						# No support
 						push_error("AuthenticationGSSContinue No support")
+						
 						close(false)
 					9:
 						### AuthenticationSSPI ###
 						
 						# No support
 						push_error("AuthenticationSSPI No support")
+						
 						close(false)
 					10:
 						### AuthenticationSASL ###
 						
 						# No support
 						push_error("AuthenticationSASL No support")
+						
 						close(false)
 					11:
 						### AuthenticationSASLContinue ###
 						
 						# No support
 						push_error("AuthenticationSASLContinue No support")
+						
 						close(false)
 					12:
 						### AuthenticationSASLFinal ###
 						
 						# No support
 						push_error("AuthenticationSASLFinal No support")
+						
 						close(false)
 					_:
 						push_error("[PostgreSQLClient:%d] Unknown authentication code." % [get_instance_id()])
