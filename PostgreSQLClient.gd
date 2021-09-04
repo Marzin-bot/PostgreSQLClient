@@ -449,7 +449,7 @@ class PostgreSQLQueryResult:
 	## This is usually a single word that identifies which SQL command was completed.
 	var command_tag: String
 	
-	## Represent the data of a notification sent by the backend on the status of the query.
+	## Represents various information about the execution status of the query notified by the backend. Can be empty.
 	var notice := {}
 	
 	## Returns all the values of a field.
