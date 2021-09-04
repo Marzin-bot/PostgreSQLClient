@@ -1,6 +1,7 @@
 # Lience MIT
 # Written by Samuel MARZIN
 # Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
+# Command pour suprimer tout les versions de postgres sur Ubuntu: $sudo apt-get --purge remove postgresql*
 extends Object
 
 ## Godot PostgreSQL Client is a GDscript script/class that allows you to connect to a Postgres backend and run SQL commands there.
@@ -448,6 +449,9 @@ class PostgreSQLQueryResult:
 	## This is usually a single word that identifies which SQL command was completed.
 	var command_tag: String
 	
+	## Represent the data of a notification sent by the backend on the status of the query.
+	var notice := {}
+	
 	## Returns all the values of a field.
 	## field_name is the name of the field on which we get the values.
 	## Can be empty if the field name is unknown.
@@ -506,7 +510,7 @@ func reponce_parser(response: PoolByteArray):
 		var message_length = buffer.get_u32()
 		
 		# Mf the size of the buffer is not equal to the length of the message, the request is not processed immediately.
-		if response_buffer.size() < message_length + 1: # problème ssl
+		if response_buffer.size() < message_length + 1:
 			break
 		
 		# Message_type
@@ -671,12 +675,9 @@ func reponce_parser(response: PoolByteArray):
 								
 								# The result.
 								row.append(value_data.get_string_from_ascii())
-							"BIT VARYING":
-								### BIT VARYING ###
-								pass
 							DataTypePostgreSQL.BITEA:
 								### BITEA ###
-								################################# support no complet ##############################
+								############################## support no complet ##############################
 								# The type returned is PoolByteArray.
 								var bitea_data := value_data.get_string_from_ascii()
 								
@@ -879,8 +880,8 @@ func reponce_parser(response: PoolByteArray):
 				# The message "CopyOutResponse" identifies the message as a Start Copy Out response. This message will be followed by copy-out data.
 				# The message "CopyBothResponse" identifies the message as a Start Copy Both response. This message is used only for Streaming Replication.
 				print("CopyInResponse OR CopyOutResponse OR CopyBothResponse no implemented.")
-			'E', 'N':
-				### ErrorResponse or NoticeResponse ###
+			'E':
+				### ErrorResponse ###
 				var error_object := {}
 				
 				for champ_data in split_pool_byte_array(response_buffer.subarray(5, message_length - 1), 0):
@@ -944,6 +945,59 @@ func reponce_parser(response: PoolByteArray):
 					emit_signal("authentication_error", error_object)
 				else:
 					prints("ERROR OBJECT:", error_object)
+			'N':
+				### NoticeResponse ###
+				var notice_object := {}
+				
+				for champ_data in split_pool_byte_array(response_buffer.subarray(5, message_length - 1), 0):
+					var champ: String = champ_data.get_string_from_ascii()
+					var field_type_id := champ[0]
+					var value := champ.trim_prefix(field_type_id)
+					
+					match field_type_id:
+						'S':
+							notice_object["severity"] = value
+						'V':
+							notice_object["severity_no_localized"] = value
+						'C':
+							notice_object["SQLSTATE_code"] = value
+						'M':
+							notice_object["message"] = value
+						'D':
+							notice_object["detail"] = value
+						'H':
+							notice_object["hint"] = value
+						'P':
+							notice_object["position"] = value
+						'p':
+							notice_object["internal_position"] = value
+						'q':
+							notice_object["internal_query"] = value
+						'W':
+							notice_object["where"] = value
+						's':
+							notice_object["schema_name"] = value
+						't':
+							notice_object["table_name"] = value
+						'c':
+							notice_object["column_name"] = value
+						'd':
+							notice_object["constraint_name"] = value
+						'n':
+							notice_object["constraint_name"] = value
+						'F':
+							notice_object["file"] = value
+						'L':
+							notice_object["line"] = value
+						'R':
+							notice_object["routine"] = value
+						_:
+							close(false)
+				
+				var last_datas_command_sql = datas_command_sql.back()
+				
+				if last_datas_command_sql:
+					last_datas_command_sql.notice = notice_object
 			'I':
 				### EmptyQueryResponse ###
 				
@@ -995,8 +1049,6 @@ func reponce_parser(response: PoolByteArray):
 						### AuthenticationKerberosV5 ###
 						
 						# No support
-						push_error("AuthenticationKerberosV5 No support")
-						
 						close(false)
 					3:
 						### AuthenticationCleartextPassword ###
@@ -1017,49 +1069,42 @@ func reponce_parser(response: PoolByteArray):
 						
 						# No support
 						push_error("AuthenticationSCMCredential No support")
-						
 						close(false)
 					7:
 						### AuthenticationGSS ###
 						
 						# No support
 						push_error("AuthenticationGSS No support")
-						
 						close(false)
 					8:
 						### AuthenticationGSSContinue ###
 						
 						# No support
 						push_error("AuthenticationGSSContinue No support")
-						
 						close(false)
 					9:
 						### AuthenticationSSPI ###
 						
 						# No support
 						push_error("AuthenticationSSPI No support")
-						
 						close(false)
 					10:
 						### AuthenticationSASL ###
 						
 						# No support
 						push_error("AuthenticationSASL No support")
-						
 						close(false)
 					11:
 						### AuthenticationSASLContinue ###
 						
 						# No support
 						push_error("AuthenticationSASLContinue No support")
-						
 						close(false)
 					12:
 						### AuthenticationSASLFinal ###
 						
 						# No support
 						push_error("AuthenticationSASLFinal No support")
-						
 						close(false)
 					_:
 						push_error("[PostgreSQLClient:%d] Unknown authentication code." % [get_instance_id()])
