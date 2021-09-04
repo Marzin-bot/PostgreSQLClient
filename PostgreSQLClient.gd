@@ -129,6 +129,13 @@ func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
 	return error
 
 
+## A dictionary which contains various information on the execution errors of the last requests made on the backend (usually after using the execute() method).
+## If the dictionary is empty, it means that the backend did not detect any error in the query.
+## Should be used ideally after each use of the execute() method.
+## For security reasons, the dictionary is empty when the frontend is not connected to the backend.
+var error_object := {}
+
+
 ## Allows you to close the connection with the backend.
 ## If clean_closure is true, the frontend will notify the backend that it requests to close the connection.
 ## If false, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
@@ -151,7 +158,11 @@ func close(clean_closure := true) -> void:
 			
 			client.disconnect_from_host()
 		
+		# For security reasons, the dictionary is empty when the frontend is not connected to the backend.
 		parameter_status = {}
+		
+		# For security reasons, the dictionary is empty when the frontend is not connected to the backend.
+		error_object = {}
 		
 		status = Status.STATUS_DISCONNECTED
 		status_ssl = 0
@@ -199,7 +210,7 @@ func execute(sql: String) -> Array:
 
 
 ## Upgrade the connexion to SSL.
-func set_ssl_connection():
+func set_ssl_connection() -> void:
 	if stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_CONNECTED:
 		push_warning("[PostgreSQLClient:%d] The connection is already secured with TLS/SSL." % [get_instance_id()])
 	elif client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
@@ -232,7 +243,7 @@ func set_ssl_connection():
 
 ##### No use #####
 ## Upgrade the connexion to GSSAPI.
-func set_gssapi_connection():
+func set_gssapi_connection() -> void:
 	### GSSENCRequest ###
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 		var buffer := StreamPeerBuffer.new()
@@ -341,7 +352,6 @@ func poll() -> void:
 						stream_peer_ssl.put_data(servire)
 
 
-
 func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
 	var buffer := StreamPeerBuffer.new()
@@ -368,6 +378,8 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 			buffer.put_data(PoolByteArray([int(char_number)]))
 	
 	buffer.put_data(message)
+	
+	error_object = {}
 	
 	return buffer.data_array.subarray(4, -1)
 
@@ -490,7 +502,7 @@ class PostgreSQLQueryResult:
 
 var postgresql_query_result_instance := PostgreSQLQueryResult.new()
 
-var datas_command_sql = []
+var datas_command_sql := []
 
 var response_buffer: PoolByteArray
 
@@ -506,14 +518,16 @@ func reponce_parser(response: PoolByteArray):
 		buffer.put_data(longeur_data)
 		buffer.seek(0)
 		
-		# Message length
+		# Message length.
 		var message_length = buffer.get_u32()
 		
-		# Mf the size of the buffer is not equal to the length of the message, the request is not processed immediately.
+		# If the size of the buffer is not equal to the length of the message, the request is not processed immediately.
+		# The server may send a fragmented response.
+		# We must therefore wait to receive the full response.
 		if response_buffer.size() < message_length + 1:
 			break
 		
-		# Message_type
+		# Message type.
 		match char(response_buffer[0]):
 			'A':
 				### NotificationResponse ###
@@ -855,7 +869,7 @@ func reponce_parser(response: PoolByteArray):
 									
 									close(false)
 									return
-									
+								
 								var result = regex.search(value_data.get_string_from_ascii())
 								if result:
 									# The result.
@@ -882,17 +896,28 @@ func reponce_parser(response: PoolByteArray):
 				print("CopyInResponse OR CopyOutResponse OR CopyBothResponse no implemented.")
 			'E':
 				### ErrorResponse ###
-				var error_object := {}
 				
+				# Identifies the message as an error.
+				
+				# The message body consists of one or more identified fields, followed by a zero byte as a terminator.
+				# Fields can appear in any order. For each field there is the following:
 				for champ_data in split_pool_byte_array(response_buffer.subarray(5, message_length - 1), 0):
 					var champ: String = champ_data.get_string_from_ascii()
-					var field_type_id := champ[0]
-					var value := champ.trim_prefix(field_type_id)
 					
-					match field_type_id:
+					# A code identifying the field type; if zero, this is the message terminator and no string follows.
+					var field_type_code := champ[0]
+					
+					# The field value.
+					var value := champ.trim_prefix(field_type_code)
+					
+					match field_type_code:
 						'S':
 							if value == "FATAL":
+								# For security reasons, the dictionary is empty when the frontend is not connected to the backend.
 								parameter_status = {}
+								
+								# For security reasons, the dictionary is empty when the frontend is not connected to the backend.
+								error_object = {}
 								
 								status = Status.STATUS_DISCONNECTED
 								
@@ -937,24 +962,33 @@ func reponce_parser(response: PoolByteArray):
 						'R':
 							error_object["routine"] = value
 						_:
-							close(false)
+							# Since more field types might be added in future, frontends should silently ignore fields of unrecognized type.
+							pass
 				
 				if status != Status.STATUS_CONNECTED and error_object["severity"] == "FATAL":
 					status = Status.STATUS_ERROR
 					
-					emit_signal("authentication_error", error_object)
-				else:
-					prints("ERROR OBJECT:", error_object)
+					emit_signal("authentication_error", error_object.duplicate())
 			'N':
 				### NoticeResponse ###
+				
+				# Identifies the message as a notice.
+				
 				var notice_object := {}
 				
+				# The message body consists of one or more identified fields, followed by a zero byte as a terminator.
+				# Fields can appear in any order.
+				# For each field there is the following:
 				for champ_data in split_pool_byte_array(response_buffer.subarray(5, message_length - 1), 0):
 					var champ: String = champ_data.get_string_from_ascii()
-					var field_type_id := champ[0]
-					var value := champ.trim_prefix(field_type_id)
 					
-					match field_type_id:
+					# A code identifying the field type; if zero, this is the message terminator and no string follows.
+					var field_type_code := champ[0]
+					
+					# The field value.
+					var value := champ.trim_prefix(field_type_code)
+					
+					match field_type_code:
 						'S':
 							notice_object["severity"] = value
 						'V':
@@ -992,7 +1026,8 @@ func reponce_parser(response: PoolByteArray):
 						'R':
 							notice_object["routine"] = value
 						_:
-							close(false)
+							# Since more field types might be added in future, frontends should silently ignore fields of unrecognized type.
+							pass
 				
 				var last_datas_command_sql = datas_command_sql.back()
 				
@@ -1049,6 +1084,8 @@ func reponce_parser(response: PoolByteArray):
 						### AuthenticationKerberosV5 ###
 						
 						# No support
+						push_error("AuthenticationKerberosV5 No support")
+						
 						close(false)
 					3:
 						### AuthenticationCleartextPassword ###
@@ -1252,7 +1289,7 @@ func reponce_parser(response: PoolByteArray):
 						# We close the connection with the backend if current backend transaction status indicator is not recognized.
 						close(false)
 				
-				var data_returned: Array = datas_command_sql
+				var data_returned := datas_command_sql
 				
 				datas_command_sql = []
 				response_buffer = PoolByteArray()
@@ -1371,7 +1408,7 @@ func reponce_parser(response: PoolByteArray):
 				pass
 			var message_type:
 				# We close the connection with the backend if the type of message is not recognized.
-				push_error("[PostgreSQLClient:%d] The type of message envoyer pas le backend is not recognized (%c)." % [get_instance_id(), message_type])
+				push_error("[PostgreSQLClient:%d] The type of message sent by the backend is not recognized (%c)." % [get_instance_id(), message_type])
 				
 				close(false)
 		
