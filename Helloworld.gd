@@ -52,7 +52,7 @@ func _executer() -> void:
 			
 			prints("Notice:", data.notice)
 	else:
-		prints("Error":, database.error_object)
+		prints("Error:", database.error_object)
 
 	database.close()
 
