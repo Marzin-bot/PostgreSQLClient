@@ -37,7 +37,8 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | Type | Properties | Default value |
 | --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
-| `dictionary` | parameter_status *reader alone* | {} |
+| `Dictionary` | parameter_status *reader alone* | {} |
+| `Dictionary` | error_object *reader alone* | {} |
 
 **METHODS:**
 
@@ -113,9 +114,9 @@ Version number (minor.major) of the PostgreSQL protocol used when connecting to 
 
 ---
 
-- `dictionary` parameter_status *reader alone*
+- `Dictionary` parameter_status *reader alone*
 
-Default value: {}
+Default value: `{}`
 
 A dictionary that contains various information about the execution state of the server. For security reasons the dictionary is always empty if the frontend is disconnected from the backend and updates once the connection is established.
 
@@ -125,6 +126,17 @@ Example of a typical value that a backend might return. Values may differ depend
 ```
 {"DateStyle":"ISO, DMY", "IntervalStyle":"postgres", "TimeZone":"Europe/Paris", "application_name":"", "client_encoding":"UTF8", "integer_datetimes":"on", "is_superuser":"off", "server_encoding":"UTF8", "server_version":"12.7 (Ubuntu 12.7-0ubuntu0.20.04.1)", "session_authorization":"samuel", "standard_conforming_strings":"on"}
 ```
+
+---
+
+- `Dictionary` error_object *reader alone*
+
+Default value: `{}`
+
+A dictionary which contains various information on the execution errors of the last requests made on the backend (usually after using the `execute()` method).
+If the dictionary is empty, it means that the backend did not detect any error in the query.
+Should be used ideally after each use of the `execute()` method.
+For security reasons, the dictionary is empty when the frontend is not connected to the backend.
 
 ---
 
@@ -223,11 +235,11 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 
 | Type | Properties | Default value |
 | --- | --- | --- |
-| `int` | number_of_fields_in_a_row *const* | 0 |
-| `Array` | row_description *const* | \[\] |
-| `Array` | data_row *const* | \[\] |
-| `String` | command_tag *const* | \"\" |
-| `Dictionary` | notice *const* | {} |
+| `int` | number_of_fields_in_a_row *reader alone* | 0 |
+| `Array` | row_description *reader alone* | \[\] |
+| `Array` | data_row *reader alone* | \[\] |
+| `String` | command_tag *reader alone* | \"\" |
+| `Dictionary` | notice *reader alone* | {} |
 
 **METHODS:**
 
