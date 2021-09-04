@@ -227,6 +227,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | `Array` | row_description *const* | \[\] |
 | `Array` | data_row *const* | \[\] |
 | `String` | command_tag *const* | \"\" |
+| `Dictionary` | notice *const* | {} |
 
 **METHODS:**
 
@@ -315,6 +316,14 @@ Note:
 Default value: `""`
 
 This is usually a single word that identifies which SQL command was completed.
+
+---
+
+`Dictionary` notice *const*
+
+Default value: `{}`
+
+Represents various information about the execution status of the query notified by the backend. Can be empty.
 
 ---
 
