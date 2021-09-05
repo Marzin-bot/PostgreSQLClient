@@ -36,22 +36,23 @@ func _executer() -> void:
 		COMMIT;
 	""")
 	
-	if database.error_object.empty():
-		#The datas variable contains an array of PostgreSQLQueryResult object.
-		for data in datas:
-			#Specifies the number of fields in a row (can be zero).
-			print(data.number_of_fields_in_a_row)
+	
+	#The datas variable contains an array of PostgreSQLQueryResult object.
+	for data in datas:
+		#Specifies the number of fields in a row (can be zero).
+		print(data.number_of_fields_in_a_row)
 
-			#This is usually a single word that identifies which SQL command was completed.
-			# note: the "BEGIN" and "COMMIT" commands return empty values
-			print(data.command_tag)
+		# This is usually a single word that identifies which SQL command was completed.
+		# note: the "BEGIN" and "COMMIT" commands return empty values
+		print(data.command_tag)
 
-			print(data.ligne_description)
+		print(data.ligne_description)
 
-			print(data.data_row)
+		print(data.data_row)
 			
-			prints("Notice:", data.notice)
-	else:
+		prints("Notice:", data.notice)
+	
+	if not database.error_object.empty():
 		prints("Error:", database.error_object)
 
 	database.close()
