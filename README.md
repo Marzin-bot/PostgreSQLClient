@@ -8,6 +8,11 @@ The class is written in pure GDScript which allows it not to depend on GDNative.
 
 There are still some minor features to add but now the script is ready for production.
 
+The default authentication method changes to Postgres 14.x (currently in beta). If you have an error message with this version, please report it!
+Correct operation of PostgreSQLClient is approved for use with a Postgres 13.x or lower backend (protocol 3.0 and md5 authentication or without encryption).
+
+Updates for postgres 14 are planned.
+
 INSTALLATION PROCEDURE:
 =======================
 It is assumed that you have installed the latest version of PostgreSQL and that you have created a database.
