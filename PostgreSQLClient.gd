@@ -125,6 +125,10 @@ func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
 					set_ssl_connection()
 				else:
 					peer.put_data(startup_message)
+	else:
+		status = Status.STATUS_ERROR
+		
+		push_error("[PostgreSQLClient:%d] Invalid Postgres URL." % [get_instance_id()])
 	
 	return error
 
