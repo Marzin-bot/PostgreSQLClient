@@ -321,7 +321,7 @@ func poll() -> void:
 							stream_peer_ssl.connect_to_stream(peer)
 							# stream_peer_ssl.blocking_handshake = false
 							status_ssl = 2
-						'E':
+						'N':
 							push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
 							
 							close(false)
