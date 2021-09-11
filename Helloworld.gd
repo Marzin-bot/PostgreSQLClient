@@ -46,7 +46,7 @@ func _executer() -> void:
 		# note: the "BEGIN" and "COMMIT" commands return empty values
 		print(data.command_tag)
 
-		print(data.ligne_description)
+		print(data.row_description)
 
 		print(data.data_row)
 			
