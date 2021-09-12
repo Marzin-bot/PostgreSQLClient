@@ -33,6 +33,15 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
 
+FREQUENTLY ASKED QUESTIONS
+==========================
+
+I get the error "SASLAuthentication No Support", what does this mean?
+
+
+---> please visit this link to understand:
+https://github.com/Marzin-bot/PostgreSQLClient/issues/20#issuecomment-917536793
+
 
 PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 ====================================
