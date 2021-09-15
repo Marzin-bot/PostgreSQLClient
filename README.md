@@ -36,7 +36,7 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 FREQUENTLY ASKED QUESTIONS
 ==========================
 
-I get the error "SASLAuthentication No Support", what does this mean?
+I get the error "SASLAuthentication No Support" (or "AuthenticationSASLContinue No support"), what does this mean?
 
 
 ---> please visit this link to understand:
