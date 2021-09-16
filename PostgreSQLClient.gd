@@ -414,39 +414,39 @@ static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int
 	return array
 
 
-static func pbkdf2(hash_type: int, password: PoolByteArray, salt: PoolByteArray, iterations := 4096, length := 0) -> PoolByteArray:
-	var crypto := Crypto.new()
-	var hash_len := len(crypto.hmac_digest(hash_type, salt, password))
-	if length == 0:
-		length = hash_len
-	
-	var output := PoolByteArray()
-	var block_count := ceil(length / hash_len)
-	
-	var buf := PoolByteArray()
-	buf.resize(4)
-	
-	var block := 1
-	while block <= block_count:
-		buf[0] = (block >> 24) & 0xFF
-		buf[1] = (block >> 16) & 0xFF
-		buf[2] = (block >> 8) & 0xFF
-		buf[3] = block & 0xFF
-		
-		var key1 := crypto.hmac_digest(hash_type, password, salt + buf)
-		var key2 := key1
-		
-		for _i in iterations - 1:
-			key1 = crypto.hmac_digest(hash_type, password, key1)
-			
-			for i in key1.size():
-				key2[i] ^= key1[i]
-		
-		output += key2
-		
-		block += 1
-	
-	return output.subarray(0, hash_len - 1)
+#static func pbkdf2(hash_type: int, password: PoolByteArray, salt: PoolByteArray, iterations := 4096, length := 0) -> PoolByteArray:
+#	var crypto := Crypto.new()
+#	var hash_len := len(crypto.hmac_digest(hash_type, salt, password))
+#	if length == 0:
+#		length = hash_len
+#	
+#	var output := PoolByteArray()
+#	var block_count := ceil(length / hash_len)
+#	
+#	var buf := PoolByteArray()
+#	buf.resize(4)
+#	
+#	var block := 1
+#	while block <= block_count:
+#		buf[0] = (block >> 24) & 0xFF
+#		buf[1] = (block >> 16) & 0xFF
+#		buf[2] = (block >> 8) & 0xFF
+#		buf[3] = block & 0xFF
+#		
+#		var key1 := crypto.hmac_digest(hash_type, password, salt + buf)
+#		var key2 := key1
+#		
+#		for _i in iterations - 1:
+#			key1 = crypto.hmac_digest(hash_type, password, key1)
+#			
+#			for i in key1.size():
+#				key2[i] ^= key1[i]
+#		
+#		output += key2
+#		
+#		block += 1
+#	
+#	return output.subarray(0, hash_len - 1)
 
 
 enum DataTypePostgreSQL {
