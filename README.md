@@ -58,7 +58,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 
 | Type | Method |
 | --- | --- |
-| `Error` | connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30) |
+| `Error` | connect_to_host(url: String, ssl: bool = true, connect_timeout: int = 30) |
 | `Status` | get_status() |
 | `Array` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
