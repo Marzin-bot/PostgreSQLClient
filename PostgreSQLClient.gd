@@ -1139,49 +1139,8 @@ func reponce_parser(response: PoolByteArray):
 						
 						# Specifies that SASL authentication is required.
 						
-						# The message body is a list of SASL authentication mechanisms, in the server's order of preference. A zero byte is required as terminator after the last authentication mechanism name. For each mechanism, there is the following:
-						for name_sasl_authentication_mechanism in split_pool_byte_array(response_buffer.subarray(9, message_length - 1), 0):
-							match name_sasl_authentication_mechanism.get_string_from_ascii():
-								"SCRAM-SHA-256":
-									### SASLInitialResponse ###
-									
-									# Identifies the message as an initial SASL response. Note that this is also used for GSSAPI, SSPI and password response messages. The exact message type is deduced from the context.
-									
-									var crypto := Crypto.new()
-									
-									nonce = Marshalls.raw_to_base64(crypto.generate_random_bytes(24))
-									
-									client_first_message = "%c,,n=%s,r=%s" % ['n', "", nonce] # When SCRAM-SHA-256 is used in PostgreSQL, the server will ignore the user name that the client sends in the client-first-message. The user name that was already sent in the startup message is used instead.
-									
-									var len_client_first_message := get_32byte_invert(len(client_first_message))
-									
-									var sasl_initial_response := request('p', "SCRAM-SHA-256".to_ascii() + PoolByteArray([0]) + len_client_first_message + client_first_message.to_utf8())
-									
-									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-										stream_peer_ssl.put_data(sasl_initial_response)
-									else:
-										peer.put_data(sasl_initial_response)
-									
-									response_buffer = PoolByteArray()
-									return
-								"SCRAM-SHA-256-PLUS":
-									# No implemented.
-									pass
-								"SCRAM-SHA-1":
-									# No implemented.
-									pass
-								"SCRAM-SHA-1-PLUS":
-									# No implemented.
-									pass
-								"CRAM-MD5":
-									# No implemented.
-									pass
-								"CRAM-MD5-PLUS":
-									# No implemented.
-									pass
-						
-						push_error("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
-						
+						# No support
+						push_error("AuthenticationSASL No support")
 						close(false)
 					11:
 						### AuthenticationSASLContinue ###
