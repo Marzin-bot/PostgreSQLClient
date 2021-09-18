@@ -40,9 +40,14 @@ FREQUENTLY ASKED QUESTIONS
 
 I get the error "SASLAuthentication No Support" (or "AuthenticationSASLContinue No support"), what does this mean?
 
-
 ---> please visit this link to understand:
 https://github.com/Marzin-bot/PostgreSQLClient/issues/20#issuecomment-917536793
+
+
+I get the error "The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection", what does this mean?
+
+---> please visit this link to understand:
+https://github.com/Marzin-bot/PostgreSQLClient/issues/29
 
 
 PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
