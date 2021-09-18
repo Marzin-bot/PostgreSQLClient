@@ -11,7 +11,7 @@ There are still some minor features to add but now the script is ready for produ
 The default authentication method changes to Postgres 14.x (currently in beta). If you have an error message with this version, please report it!
 Correct operation of PostgreSQLClient is approved for use with a Postgres 13.x or lower backend (protocol 3.0 and md5 authentication or without encryption).
 
-Updates for postgres 14 are planned. You must use version 3.4 or higher of godot. Note that the work is still in progress for godot 4.0 and that I only take godot 3.
+Updates for postgres 14 are planned. You must use version 3.4 or higher of godot. Note that the work is still in progress for godot 4.0.
 
 INSTALLATION PROCEDURE:
 =======================
