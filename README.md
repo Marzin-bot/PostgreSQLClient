@@ -33,6 +33,8 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
 
+PostgreSQLClient will no longer work with Godot 3.3. You must use version 3.4 or higher (version 3.x).
+
 FREQUENTLY ASKED QUESTIONS
 ==========================
 
