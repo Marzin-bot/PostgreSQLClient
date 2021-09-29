@@ -4,14 +4,9 @@
 </p>
 Godot PostgreSQL Client is a GDscript script / class that allows you to connect to a Postgres backend and run SQL commands there. It is able to send data and receive it from the backend. Useful for managing player user data on a multiplayer game, by saving a large amount of data on a dedicated Postgres server from GDscript.
 
-The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms. You can see a taste of using the Postgresql connector for Godot 3 in the "Helloworld.gd" file.
+The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms. You can see a taste of using the Postgresql connector for Godot 4.0 in the "Helloworld.gd" file.
 
 There are still some minor features to add but now the script is ready for production.
-
-The default authentication method changes to Postgres 14.x (currently in beta). If you have an error message with this version, please report it!
-Correct operation of PostgreSQLClient is approved for use with a Postgres 13.x or lower backend (protocol 3.0 and md5 authentication or without encryption).
-
-Updates for postgres 14 are planned. You must use version 3.4 or higher of godot. Note that the work is still in progress for godot 4.0.
 
 INSTALLATION PROCEDURE:
 =======================
@@ -33,16 +28,10 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
 
-PostgreSQLClient will no longer work with Godot 3.3. You must use version 3.4 or higher (version 3.x).
+You must use version 4.x.
 
 FREQUENTLY ASKED QUESTIONS
 ==========================
-
-I get the error "SASLAuthentication No Support" (or "AuthenticationSASLContinue No support"), what does this mean?
-
----> please visit this link to understand:
-https://github.com/Marzin-bot/PostgreSQLClient/issues/20#issuecomment-917536793
-
 
 I get the error "The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection", what does this mean?
 
