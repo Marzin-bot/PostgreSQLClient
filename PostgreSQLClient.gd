@@ -28,15 +28,16 @@ enum Status {
 	STATUS_ERROR ## A status representing a PostgreSQLClient in error state.
 }
 
-# The statut of the connection.
-var status: Status = Status.STATUS_DISCONNECTED:
-	## Returns the status of the connection (see the Status enumeration).
-	get:
-		return status
-	set(value):
-		# The value of the "status" variable can only be modified locally.
-		status = value
 
+# The statut of the connection.
+var status: Status = Status.STATUS_DISCONNECTED
+
+
+enum Transaction_status {
+	NOT_IN_A_TRANSACTION_BLOCK,
+	IN_A_TRANSACTION_BLOCK,
+	IN_A_FAILED_TRANSACTION_BLOCK
+}
 
 var password_global: String
 var user_global: String
@@ -62,12 +63,13 @@ signal connection_error() # del /!\
 ## The error_object parameter is a dictionary that contains various information during the nature of the error.
 signal authentication_error(error_object)
 
-
 ## Trigger when the connection between the frontend and the backend is established.
 ## This is usually a good time to start making requests to the backend with execute ().
 signal connection_established
 
-signal data_received
+## Returns an Array of PostgreSQLQueryResult. (Can be empty)
+## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (except in exceptional cases).
+signal data_received(error_object, transaction_status, datas)
 
 ################## No use at the moment ###############
 ## The process ID of this backend.
@@ -177,41 +179,29 @@ func close(clean_closure := true) -> void:
 		push_warning("[PostgreSQLClient:%d] The fontend was already disconnected from the backend when calling close()." % [get_instance_id()])
 
 
+var busy := false
+
 ## Allows to send an SQL string to the backend that should run.
 ## The sql parameter can contain one or more valid SQL statements.
-## Returns an Array of PostgreSQLQueryResult. (Can be empty)
-## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (sof in exceptional cases).
-func execute(sql: String) -> Array:
+func execute(sql: String) -> int:
 	if status == Status.STATUS_CONNECTED:
-		var request_result := request('Q', sql.to_utf8_buffer() + PackedByteArray([0]))
-		
-		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			stream_peer_ssl.put_data(request_result)
-		else:
-			peer.put_data(request_result)
-		
-		while client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED:
-			var reponce: Array = [OK, PackedByteArray()]
+		if not busy:
+			var request_result := request('Q', sql.to_utf8_buffer() + PackedByteArray([0]))
 			
 			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-				stream_peer_ssl.poll()
-				if stream_peer_ssl.get_available_bytes():
-					reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes()) # I don't know why it crashes when this value (stream_peer_ssl.get_available_bytes()) is equal to 0 so I pass it a condition. It is probably a Godot bug.
-				else:
-					continue
+				stream_peer_ssl.put_data(request_result)
 			else:
-				reponce = peer.get_data(peer.get_available_bytes())
+				peer.put_data(request_result)
 			
-			if reponce[0] == OK:
-				var result = reponce_parser(reponce[1])
-				if result != null:
-					return result
-			else:
-				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
-	else:
-		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
+			busy = true
+			
+			return OK
+		else:
+			return ERR_BUSY
 	
-	return []
+	push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
+	
+	return ERR_CANT_CONNECT
 
 
 ## Upgrade the connexion to SSL.
@@ -320,6 +310,20 @@ func poll() -> void:
 							push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
 							
 							close(false)
+			else:
+				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
+		
+		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED and busy:
+			var response: Array = [OK, PackedByteArray()]
+			
+			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+				if stream_peer_ssl.get_available_bytes():
+					response = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes()) # I don't know why it crashes when this value (stream_peer_ssl.get_available_bytes()) is equal to 0 so I pass it a condition. It is probably a Godot bug.
+			else:
+				response = peer.get_data(peer.get_available_bytes())
+			
+			if response[0] == OK:
+				reponce_parser(response[1])
 			else:
 				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
 		
@@ -1726,26 +1730,36 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message type. ReadyForQuery is sent whenever the backend is ready for a new query cycle.
 				
 				# Get current backend transaction status indicator.
+				var transaction_status: Transaction_status
+				
 				match char(response_buffer[message_length]):
 					'I':
+						### NOT IN A TRANSACTION_BLOCK ###
+						
 						# If idle (if not in a transaction block).
-						prints("Not in a transaction block.")
+						transaction_status = Transaction_status.NOT_IN_A_TRANSACTION_BLOCK
 					'T':
+						### IN A TRANSACTION BLOCK ###
+						
 						# If in a transaction block.
-						prints("In a transaction block.")
+						transaction_status = Transaction_status.IN_A_TRANSACTION_BLOCK
 					'E':
+						### IN A FAILED TRANSACTION BLOCK ###
+						
 						# If in a failed transaction block (queries will be rejected until block is ended).
-						prints("In a failed transaction block.")
+						transaction_status = Transaction_status.IN_A_FAILED_TRANSACTION_BLOCK
 					_:
 						# We close the connection with the backend if current backend transaction status indicator is not recognized.
 						close(false)
+						
+						response_buffer.resize(0)
+						return
 				
 				var data_returned := datas_command_sql
 				
 				datas_command_sql = []
 				response_buffer.resize(0)
 				
-				print(status == Status.STATUS_CONNECTING)
 				if status == Status.STATUS_CONNECTING:
 					status = Status.STATUS_CONNECTED
 					
@@ -1754,6 +1768,8 @@ func reponce_parser(response: PackedByteArray):
 					user_global = ""
 					
 					emit_signal("connection_established")
+				elif status == Status.STATUS_CONNECTED:
+					emit_signal("data_received", error_object, transaction_status, data_returned)
 				
 				return data_returned
 			'c':
