@@ -1,11 +1,11 @@
 extends Node
 
 
-const USER := "zenpolserver"
-const PASSWORD := "samuel22112002"
+const USER := "Samuel"
+const PASSWORD := "my_password"
 const HOST := "localhost"
 const PORT := 5432 # Default postgres port
-const DATABASE := "zenpol" # Database name
+const DATABASE := "postgres" # Database name
 
 var database: PostgreSQLClient = PostgreSQLClient.new()
 
