@@ -142,6 +142,7 @@ func connect_to_host(url: String, ssl := true, _connect_timeout := 30) -> int:
 ## For security reasons, the dictionary is empty when the frontend is not connected to the backend.
 var error_object := {}
 
+var busy := false
 
 ## Allows you to close the connection with the backend.
 ## If clean_closure is true, the frontend will notify the backend that it requests to close the connection.
@@ -173,13 +174,12 @@ func close(clean_closure := true) -> void:
 		
 		status = Status.STATUS_DISCONNECTED
 		status_ssl = 0
+		busy = false
 		
 		emit_signal("connection_closed", clean_closure)
 	else:
 		push_warning("[PostgreSQLClient:%d] The fontend was already disconnected from the backend when calling close()." % [get_instance_id()])
 
-
-var busy := false
 
 ## Allows to send an SQL string to the backend that should run.
 ## The sql parameter can contain one or more valid SQL statements.
@@ -1769,6 +1769,8 @@ func reponce_parser(response: PackedByteArray):
 					
 					emit_signal("connection_established")
 				elif status == Status.STATUS_CONNECTED:
+					busy = false
+					
 					emit_signal("data_received", error_object, transaction_status, data_returned)
 				
 				return data_returned
