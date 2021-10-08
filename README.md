@@ -28,7 +28,7 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
 
-You must use version 3.x.
+You must use version 3.4.
 
 FREQUENTLY ASKED QUESTIONS
 ==========================
