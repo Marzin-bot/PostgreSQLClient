@@ -1,21 +1,24 @@
 # Lience MIT
 # Written by Samuel MARZIN
 # Detailed documentation: https://github.com/Marzin-bot/PostgreSQLClient/wiki/Documentation
-# Command pour suprimer tout les versions de postgres sur Ubuntu: $sudo apt-get --purge remove postgresql*
 extends Object
+
 
 ## Godot PostgreSQL Client is a GDscript script/class that allows you to connect to a Postgres backend and run SQL commands there.
 ## It is able to send data and receive it from the backend. Useful for managing player user data on a multiplayer game, by saving a large amount of data on a dedicated Postgres server from GDscript.
 ## The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms.
 class_name PostgreSQLClient
 
+
+## Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend.
+const PROTOCOL_VERSION := 3.0
+
+
 ## Backend runtime parameters
 ## A dictionary that contains various information about the state of the server.
 ## For security reasons the dictionary is always empty if the frontend is disconnected from the backend and updates once the connection is established.
 var parameter_status := {}
 
-## Version number (minor.major) of the PostgreSQL protocol used when connecting to the backend.
-const PROTOCOL_VERSION := 3.0
 
 ## Enemeration the statuts of the connection.
 enum Status {
@@ -44,10 +47,8 @@ var client := StreamPeerTCP.new()
 var peerstream := PacketPeerStream.new()
 var stream_peer_ssl = StreamPeerSSL.new()
 
-var peer
+var peer: StreamPeer
 func _init() -> void:
-	#client.connect("connection_closed", self, "_executer")
-	
 	peerstream.set_stream_peer(client)
 	peer = peerstream.stream_peer
 
@@ -84,7 +85,7 @@ var global_url = ""
 
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	global_url = url
 	var error := 1
 	
@@ -100,6 +101,8 @@ func connect_to_host(url: String, ssl := true, connect_timeout := 30) -> int:
 	
 	if result:
 		### StartupMessage ###
+		
+		# "postgres" is the database and user by default.
 		var startup_message = request("", "user".to_ascii() + PoolByteArray([0]) + result.strings[1].to_utf8() + PoolByteArray([0]) + "database".to_ascii() + PoolByteArray([0]) + result.strings[5].to_utf8() + PoolByteArray([0, 0]))
 		
 		password_global = result.strings[2]
@@ -223,22 +226,13 @@ func set_ssl_connection() -> void:
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
-		buffer.put_u32(8)
-		
-		var message_length := buffer.data_array
-		
-		message_length.invert()
-		
-		buffer.put_data(message_length)
+		buffer.put_data(get_32byte_invert(8, true))
 		
 		# The SSL request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_data(get_32bit_invert(80877103))
+		buffer.put_data(get_32byte_invert(80877103))
 		
-		#for char_number in [4, 210, 22, 47]:
-		#	buffer.put_data(PoolByteArray([4, 210, 22, 47]))
-		
-		peer.put_data(buffer.data_array.subarray(4, -1))
+		peer.put_data(buffer.data_array)
 		
 		status_ssl = 1
 	else:
@@ -248,24 +242,19 @@ func set_ssl_connection() -> void:
 ##### No use #####
 ## Upgrade the connexion to GSSAPI.
 func set_gssapi_connection() -> void:
-	### GSSENCRequest ###
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		### GSSENCRequest ###
+		
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
-		buffer.put_u32(8)
-		
-		var message_length := buffer.data_array
-		
-		message_length.invert()
-		
-		buffer.put_data(message_length)
+		buffer.put_data(get_32byte_invert(8, true))
 		
 		# The GSSAPI Encryption request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5680 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_data(get_32bit_invert(80877104))
+		buffer.put_data(get_32byte_invert(80877104))
 		
-		peer.put_data(buffer.data_array.subarray(4, -1))
+		peer.put_data(buffer.data_array)
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
@@ -288,7 +277,7 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		# The cancel request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_data(get_32bit_invert(80877102))
+		buffer.put_data(get_32byte_invert(80877102))
 		
 		# The process ID of the target backend.
 		buffer.put_u32(process_id)
@@ -322,10 +311,14 @@ func poll() -> void:
 							# stream_peer_ssl.blocking_handshake = false
 							status_ssl = 2
 						'N':
+							status = Status.STATUS_ERROR
+							
 							push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
 							
 							close(false)
 						var value:
+							status = Status.STATUS_ERROR
+							
 							push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
 							
 							close(false)
@@ -338,7 +331,7 @@ func poll() -> void:
 			status_ssl = 3
 		
 		
-		if (status_ssl != 1 and status_ssl != 2) and not status == Status.STATUS_CONNECTED and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		if status_ssl != 1 and status_ssl != 2 and not status == Status.STATUS_CONNECTED and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 			var reponce: Array
 			
 			if status_ssl == 0:
@@ -388,15 +381,18 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	return buffer.data_array.subarray(4, -1)
 
 
-static func get_32bit_invert(integer: int) -> PoolByteArray:
+static func get_32byte_invert(integer: int, unsigned := false) -> PoolByteArray:
 	var buffer := StreamPeerBuffer.new()
 	
-	buffer.put_32(integer)
+	if unsigned:
+		buffer.put_u32(integer)
+	else:
+		buffer.put_32(integer)
 	
-	var bit := buffer.data_array
-	bit.invert()
+	var bytes := buffer.data_array
+	bytes.invert()
 	
-	return bit
+	return bytes
 
 
 static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int) -> Array:
@@ -414,39 +410,39 @@ static func split_pool_byte_array(pool_byte_array: PoolByteArray, delimiter: int
 	return array
 
 
-#static func pbkdf2(hash_type: int, password: PoolByteArray, salt: PoolByteArray, iterations := 4096, length := 0) -> PoolByteArray:
-#	var crypto := Crypto.new()
-#	var hash_len := len(crypto.hmac_digest(hash_type, salt, password))
-#	if length == 0:
-#		length = hash_len
-#	
-#	var output := PoolByteArray()
-#	var block_count := ceil(length / hash_len)
-#	
-#	var buf := PoolByteArray()
-#	buf.resize(4)
-#	
-#	var block := 1
-#	while block <= block_count:
-#		buf[0] = (block >> 24) & 0xFF
-#		buf[1] = (block >> 16) & 0xFF
-#		buf[2] = (block >> 8) & 0xFF
-#		buf[3] = block & 0xFF
-#		
-#		var key1 := crypto.hmac_digest(hash_type, password, salt + buf)
-#		var key2 := key1
-#		
-#		for _i in iterations - 1:
-#			key1 = crypto.hmac_digest(hash_type, password, key1)
-#			
-#			for i in key1.size():
-#				key2[i] ^= key1[i]
-#		
-#		output += key2
-#		
-#		block += 1
-#	
-#	return output.subarray(0, hash_len - 1)
+static func pbkdf2(hash_type: int, password: PoolByteArray, salt: PoolByteArray, iterations := 4096, length := 0) -> PoolByteArray:
+	var crypto := Crypto.new()
+	var hash_length := len(crypto.hmac_digest(hash_type, salt, password))
+	if length == 0:
+		length = hash_length
+	
+	var output := PoolByteArray()
+	var block_count := ceil(length / hash_length)
+	
+	var buffer := PoolByteArray()
+	buffer.resize(4)
+	
+	var block := 1
+	while block <= block_count:
+		buffer[0] = (block >> 24) & 0xFF
+		buffer[1] = (block >> 16) & 0xFF
+		buffer[2] = (block >> 8) & 0xFF
+		buffer[3] = block & 0xFF
+		
+		var key_1 := crypto.hmac_digest(hash_type, password, salt + buffer)
+		var key_2 := key_1
+		
+		for _index in iterations - 1:
+			key_1 = crypto.hmac_digest(hash_type, password, key_1)
+			
+			for index in key_1.size():
+				key_2[index] ^= key_1[index]
+		
+		output += key_2
+		
+		block += 1
+	
+	return output.subarray(0, hash_length - 1)
 
 
 enum DataTypePostgreSQL {
@@ -497,6 +493,12 @@ class PostgreSQLQueryResult:
 	## These elements are native GDscript types that represent the data resulting from the query.
 	var data_row := []
 	
+	## An Array that contains sub-arrays.
+	## These sub-arrays represent for most of the queries the rows of the table where the query was executed.
+	## The number of sub-tables depends on the query that has been made.
+	## These sub-arrays contain as many elements as number_of_fields_in_a_row.
+	var raw_data_row := []
+	
 	## This is usually a single word that identifies which SQL command was completed.
 	var command_tag: String
 	
@@ -545,19 +547,20 @@ var datas_command_sql := []
 
 var response_buffer: PoolByteArray
 
-var nonce: String # For authentication SASL.
-var client_first_message: String # For authentication SASL.
+var client_first_message: String # Authentication SASL
+var salted_password: PoolByteArray # Authentication SASL
+var auth_message: String # Authentication SASL
 
 func reponce_parser(response: PoolByteArray):
 	response_buffer += response
 	
 	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and response_buffer.size() > 4:
 		# Get the length of the response.
-		var longeur_data = response_buffer.subarray(1, 4)
-		longeur_data.invert()
+		var data_length = response_buffer.subarray(1, 4)
+		data_length.invert()
 		
 		var buffer := StreamPeerBuffer.new()
-		buffer.put_data(longeur_data)
+		buffer.put_data(data_length)
 		buffer.seek(0)
 		
 		# Message length.
@@ -625,6 +628,7 @@ func reponce_parser(response: PoolByteArray):
 				
 				var cursor := 0
 				var row := []
+				var raw_row := []
 				
 				# Next, the following pair of fields appear for each column.
 				for i in number_of_columns:
@@ -643,12 +647,29 @@ func reponce_parser(response: PoolByteArray):
 						# The result.
 						row.append(null)
 						
+						match postgresql_query_result_instance.row_description[i].format_code:
+							0:
+								raw_row.append("")
+							1:
+								raw_row.append(PoolByteArray())
+							_:
+								print("error")
+						
 						value_length = 0
 					else:
 						var value_data := response_buffer.subarray(cursor + 11, cursor + value_length + 10)
+						
+						match postgresql_query_result_instance.row_description[i].format_code:
+							0:
+								raw_row.append(value_data.get_string_from_ascii())
+							1:
+								raw_row.append(value_data)
+							_:
+								print("error")
+						
 						var error: int
 						
-						match postgresql_query_result_instance.row_description[i]["type_object_id"]:
+						match postgresql_query_result_instance.row_description[i].type_object_id:
 							DataTypePostgreSQL.BOOLEAN:
 								### BOOLEAN ###
 								
@@ -669,27 +690,61 @@ func reponce_parser(response: PoolByteArray):
 										
 										close(false)
 										return
-							DataTypePostgreSQL.SMALLINT, DataTypePostgreSQL.INTEGER, DataTypePostgreSQL.BIGINT:
-								### SMALLINT or INTEGER or BIGINT ###
+							DataTypePostgreSQL.SMALLINT:
+								### SMALLINT ###
 								
 								# The type returned is int.
 								# The result.
 								row.append(int(value_data.get_string_from_ascii()))
-							DataTypePostgreSQL.REAL, DataTypePostgreSQL.DOUBLE_PRECISION:
-								### REAL or DOUBLE PRECISION ###
+							DataTypePostgreSQL.INTEGER:
+								### INTEGER ###
+								
+								# The type returned is int.
+								# The result.
+								row.append(int(value_data.get_string_from_ascii()))
+							DataTypePostgreSQL.BIGINT:
+								### BIGINT ###
+								
+								# The type returned is int.
+								# The result.
+								row.append(int(value_data.get_string_from_ascii()))
+							DataTypePostgreSQL.REAL:
+								### REAL ###
 								
 								# The type returned is float.
 								# The result.
 								row.append(float(value_data.get_string_from_ascii()))
-							DataTypePostgreSQL.TEXT, DataTypePostgreSQL.CHARACTER, DataTypePostgreSQL.CHARACTER_VARYING:
-								### TEXT or CHARACTER or CHARACTER_VARYING ###
+							DataTypePostgreSQL.DOUBLE_PRECISION:
+								### DOUBLE PRECISION ###
+								
+								# The type returned is float.
+								# The result.
+								row.append(float(value_data.get_string_from_ascii()))
+							DataTypePostgreSQL.TEXT:
+								### TEXT ###
+								
+								# The type returned is String.
+								# The result.
+								row.append(value_data.get_string_from_utf8())
+							DataTypePostgreSQL.CHARACTER:
+								### CHARACTER ###
+								
+								# The type returned is String.
+								# The result.
+								row.append(value_data.get_string_from_utf8())
+							DataTypePostgreSQL.CHARACTER_VARYING:
+								### CHARACTER_VARYING ###
 								
 								# The type returned is String.
 								# The result.
 								row.append(value_data.get_string_from_utf8())
 							"tsvector":
+								### TSVECTOR ###
+								
 								pass
 							"tsquery":
+								### TSQUERY ###
+								
 								pass
 							DataTypePostgreSQL.XML:
 								### XML ###
@@ -705,9 +760,11 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid XML object. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									
+									response_buffer = PoolByteArray()
 									return
-							DataTypePostgreSQL.JSON, DataTypePostgreSQL.JSONB:
-								### JSON or JSONB ###
+							DataTypePostgreSQL.JSON:
+								### JSON ###
 								
 								# The type returned is String.
 								var json = value_data.get_string_from_utf8()
@@ -715,15 +772,42 @@ func reponce_parser(response: PoolByteArray):
 								var json_error := validate_json(json)
 								
 								if json_error:
-									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSON/JSONB object: (Error: %d)" % [get_instance_id(), json_error])
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSON object: (Error: %d)" % [get_instance_id(), json_error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								else:
 									# The result.
 									row.append(json)
-							DataTypePostgreSQL.BIT, DataTypePostgreSQL.BIT_VARYING:
-								### BIT or BIT VARYING ###
+							DataTypePostgreSQL.JSONB:
+								### JSONB ###
+								
+								# The type returned is String.
+								var json = value_data.get_string_from_utf8()
+								
+								var json_error := validate_json(json)
+								
+								if json_error:
+									push_error("[PostgreSQLClient:%d] The backend sent an invalid JSONB object: (Error: %d)" % [get_instance_id(), json_error])
+									
+									close(false)
+									response_buffer = PoolByteArray()
+									return
+								else:
+									# The result.
+									row.append(json)
+							DataTypePostgreSQL.BIT:
+								### BIT ###
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.BIT_VARYING:
+								### BIT VARYING ###
 								
 								# The type returned is String.
 								
@@ -733,7 +817,9 @@ func reponce_parser(response: PoolByteArray):
 								row.append(value_data.get_string_from_ascii())
 							DataTypePostgreSQL.BITEA:
 								### BITEA ###
-								############################## support no complet ##############################
+								
+								# /!\ Support not complet (not end). /!\
+								
 								# The type returned is PoolByteArray.
 								var bitea_data := value_data.get_string_from_ascii()
 								
@@ -749,15 +835,19 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid BITEA object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							"timestamp":
 								### TIMESTAMP ###
+								
 								pass
 							"date":
 								### DATE ###
+								
 								pass
 							"interval":
 								### INTERVAL ###
+								
 								pass
 							DataTypePostgreSQL.UUID:
 								### UUID ###
@@ -768,8 +858,18 @@ func reponce_parser(response: PoolByteArray):
 								
 								# The result.
 								row.append(value_data.get_string_from_ascii())
-							DataTypePostgreSQL.CIDR, DataTypePostgreSQL.INET:
-								### CIDR or INET ###
+							DataTypePostgreSQL.CIDR:
+								### CIDR ###
+								
+								# The type returned is String.
+								
+								# Ideally we should validate the value sent by the backend with the line if below...
+								#value_data.get_string_from_ascii().is_valid_ip_address()
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.INET:
+								### INET ###
 								
 								# The type returned is String.
 								
@@ -807,6 +907,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] RegEx compilation of POINT object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								
 								var result = regex.search(value_data.get_string_from_ascii())
@@ -818,6 +919,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid POINT object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							DataTypePostgreSQL.BOX:
 								### BOX ###
@@ -830,6 +932,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] RegEx compilation of BOX object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								
 								var result = regex.search(value_data.get_string_from_ascii())
@@ -840,6 +943,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid BOX object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							DataTypePostgreSQL.LSEG:
 								### LSEG ###
@@ -852,6 +956,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] RegEx compilation of LSEG object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								
 								var result = regex.search(value_data.get_string_from_ascii())
@@ -865,6 +970,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid LSEG object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							"polygon":
 								### POLYGON ###
@@ -887,6 +993,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] RegEx compilation of LINE object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								
 								var result = regex.search(value_data.get_string_from_ascii())
@@ -898,6 +1005,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid LINE object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							DataTypePostgreSQL.CIRCLE:
 								### CIRCLE ###
@@ -910,6 +1018,7 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] RegEx compilation of CIRCLE object failed. (Error: %d)" % [get_instance_id(), error])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 								
 								var result = regex.search(value_data.get_string_from_ascii())
@@ -920,22 +1029,17 @@ func reponce_parser(response: PoolByteArray):
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid CIRCLE object." % [get_instance_id()])
 									
 									close(false)
+									response_buffer = PoolByteArray()
 									return
 							_:
 								# The type returned is PoolByteArray.
 								row.append(value_data)
-						
+					
 					cursor += value_length + 4
 				
 				# The result.
 				postgresql_query_result_instance.data_row.append(row)
-			'G', 'H', 'W':
-				### CopyInResponse or CopyOutResponse or CopyBothResponse ###
-				
-				# The message "CopyInResponse" identifies the message as a Start Copy In response. The frontend must now send copy-in data (if not prepared to do so, send a CopyFail message).
-				# The message "CopyOutResponse" identifies the message as a Start Copy Out response. This message will be followed by copy-out data.
-				# The message "CopyBothResponse" identifies the message as a Start Copy Both response. This message is used only for Streaming Replication.
-				print("CopyInResponse OR CopyOutResponse OR CopyBothResponse no implemented.")
+				postgresql_query_result_instance.raw_data_row.append(raw_row)
 			'E':
 				### ErrorResponse ###
 				
@@ -974,6 +1078,7 @@ func reponce_parser(response: PoolByteArray):
 							error_object["SQLSTATE_code"] = value
 						'M':
 							error_object["message"] = value
+							
 							push_error("[PostgreSQLClient:%d] %s" % [get_instance_id(), value])
 						'D':
 							error_object["detail"] = value
@@ -1007,10 +1112,93 @@ func reponce_parser(response: PoolByteArray):
 							# Since more field types might be added in future, frontends should silently ignore fields of unrecognized type.
 							pass
 				
-				if status != Status.STATUS_CONNECTED and error_object["severity"] == "FATAL":
+				if error_object["severity"] == "FATAL":
 					status = Status.STATUS_ERROR
 					
-					emit_signal("authentication_error", error_object.duplicate())
+					if status != Status.STATUS_CONNECTED:
+						emit_signal("authentication_error", error_object.duplicate())
+			'G':
+				### CopyInResponse ###
+				
+				# The message "CopyInResponse" identifies the message as a Start Copy In response. The frontend must now send copy-in data (if not prepared to do so, send a CopyFail message).
+				
+				buffer = StreamPeerBuffer.new()
+				
+				# Get overall copy format code.
+				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
+				var overall_copy_format_code = response_buffer.subarray(5, 6)
+				overall_copy_format_code.invert()
+				
+				buffer.put_data(overall_copy_format_code)
+				buffer.seek(0)
+				
+				overall_copy_format_code = buffer.get_u8()
+				
+				# Get the number of columns in the data to be copied.
+				var number_of_columns = response_buffer.subarray(7, 9)
+				number_of_columns.invert()
+				
+				buffer.put_data(number_of_columns)
+				buffer.seek(1)
+				
+				number_of_columns = buffer.get_u16()
+				
+				# Get the format codes to be used for each column.
+				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
+				for index in number_of_columns:
+					var format_code = response_buffer.subarray(10, 12)
+					format_code.invert()
+					
+					buffer.put_data(format_code)
+					buffer.seek(2 * index + 3)
+					
+					format_code = buffer.get_u16()
+					
+					# The result.
+					print(format_code)
+				
+				push_warning("[PostgreSQLClient:%d] CopyInResponse, no support." % [get_instance_id()])
+			'H':
+				### CopyOutResponse ###
+				
+				# The message "CopyOutResponse" identifies the message as a Start Copy Out response. This message will be followed by copy-out data.
+				
+				buffer = StreamPeerBuffer.new()
+				
+				# Get overall copy format code.
+				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
+				var overall_copy_format_code = response_buffer.subarray(5, 6)
+				overall_copy_format_code.invert()
+				
+				buffer.put_data(overall_copy_format_code)
+				buffer.seek(0)
+				
+				overall_copy_format_code = buffer.get_8()
+				
+				# Get the number of columns in the data to be copied.
+				var number_of_columns = response_buffer.subarray(7, 9)
+				number_of_columns.invert()
+				
+				buffer.put_data(number_of_columns)
+				buffer.seek(1)
+				
+				number_of_columns = buffer.get_16()
+				
+				# Get the format codes to be used for each column.
+				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
+				for index in number_of_columns:
+					var format_code = response_buffer.subarray(10, 12)
+					format_code.invert()
+					
+					buffer.put_data(format_code)
+					buffer.seek(2 * index + 3)
+					
+					format_code = buffer.get_16()
+					
+					# The result.
+					print(format_code)
+				
+				push_warning("[PostgreSQLClient:%d] CopyOutResponse, no support." % [get_instance_id()])
 			'N':
 				### NoticeResponse ###
 				
@@ -1108,6 +1296,7 @@ func reponce_parser(response: PoolByteArray):
 				### Authentication ###
 				
 				# Identifies the message as an authentication request.
+				
 				var authentication_type_data := response_buffer.subarray(5, 8)
 				
 				authentication_type_data.invert()
@@ -1121,78 +1310,246 @@ func reponce_parser(response: PoolByteArray):
 					0:
 						### AuthenticationOk ###
 						
+						# Specifies that the authentication was successful.
+						
 						status = Status.STATUS_CONNECTING
 					2:
 						### AuthenticationKerberosV5 ###
 						
+						# Specifies that Kerberos V5 authentication is required.
+						
+						# rfc4120
 						# No support
 						push_error("AuthenticationKerberosV5 No support")
-						
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					3:
 						### AuthenticationCleartextPassword ###
 						
+						# Specifies that a clear-text password is required.
+						
 						response_buffer = PoolByteArray()
 						return request('p', password_global.to_utf8())
-					5: 
+					5:
 						### AuthentificationMD5Password ###
 						
 						# Specifies that an MD5-encrypted password is required.
 						
-						var ctx = HashingContext.new()
-						ctx.start(HashingContext.HASH_MD5)
-						ctx.update((password_global + user_global).md5_buffer().hex_encode().to_ascii() + response_buffer.subarray(9, 12))
+						var hashing_context = HashingContext.new()
+						hashing_context.start(HashingContext.HASH_MD5)
+						hashing_context.update((password_global + user_global).md5_buffer().hex_encode().to_ascii() + response_buffer.subarray(9, 12))
 						
 						response_buffer = PoolByteArray()
-						return request('p', ("md5" + ctx.finish().hex_encode()).to_ascii() + PoolByteArray([0]))
+						return request('p', ("md5" + hashing_context.finish().hex_encode()).to_ascii() + PoolByteArray([0]))
 					6:
 						### AuthenticationSCMCredential ###
 						
+						# Specifies that an SCM credentials message is required.
 						# No support
 						push_error("AuthenticationSCMCredential No support")
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					7:
 						### AuthenticationGSS ###
 						
+						# Specifies that GSSAPI authentication is required.
 						# No support
 						push_error("AuthenticationGSS No support")
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					8:
 						### AuthenticationGSSContinue ###
 						
+						# Specifies that this message contains GSSAPI or SSPI data.
 						# No support
 						push_error("AuthenticationGSSContinue No support")
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					9:
 						### AuthenticationSSPI ###
+						
+						# Specifies that SSPI authentication is required.
 						
 						# No support
 						push_error("AuthenticationSSPI No support")
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					10:
 						### AuthenticationSASL ###
 						
 						# Specifies that SASL authentication is required.
 						
-						# No support
-						push_error("AuthenticationSASL No support")
+						# Get the message body is a list of SASL authentication mechanisms, in the server's order of preference. A zero byte is required as terminator after the last authentication mechanism name.
+						# For each mechanism, there is the following:
+						for name_sasl_authentication_mechanism in split_pool_byte_array(response_buffer.subarray(9, message_length - 1), 0):
+							match name_sasl_authentication_mechanism.get_string_from_ascii():
+								"SCRAM-SHA-256":
+									### SASLInitialResponse ###
+									
+									# Identifies the message as an initial SASL response. Note that this is also used for GSSAPI, SSPI and password response messages. The exact message type is deduced from the context.
+									
+									var crypto := Crypto.new()
+									
+									var nonce = Marshalls.raw_to_base64(crypto.generate_random_bytes(24))
+									
+									client_first_message = "%c,,n=%s,r=%s" % ['n', "", nonce] # When SCRAM-SHA-256 is used in PostgreSQL, the server will ignore the user name that the client sends in the client-first-message. The user name that was already sent in the startup message is used instead.
+									
+									var len_client_first_message := get_32byte_invert(len(client_first_message), true)
+									
+									var sasl_initial_response := request('p', "SCRAM-SHA-256".to_ascii() + PoolByteArray([0]) + len_client_first_message + client_first_message.to_utf8())
+									
+									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+										stream_peer_ssl.put_data(sasl_initial_response)
+									else:
+										peer.put_data(sasl_initial_response)
+									
+									response_buffer = PoolByteArray()
+									return
+								"SCRAM-SHA-256-PLUS":
+									continue # I'm still not done implementing SCRAM-SHA-256-PLUS, so we'll skip it for now.
+									
+									# /!\ Not end /!\
+									
+									### SASLInitialResponse ###
+									
+									# Identifies the message as an initial SASL response. Note that this is also used for GSSAPI, SSPI and password response messages. The exact message type is deduced from the context.
+									
+									var crypto := Crypto.new()
+									
+									var nonce = Marshalls.raw_to_base64(crypto.generate_random_bytes(24))
+									
+									client_first_message = "%c,,n=%s,r=%s" % ['y', "", nonce] # When SCRAM-SHA-256-PLUS is used in PostgreSQL, the server will ignore the user name that the client sends in the client-first-message. The user name that was already sent in the startup message is used instead.
+									
+									var len_client_first_message := get_32byte_invert(len(client_first_message), true)
+									
+									var sasl_initial_response := request('p', "SCRAM-SHA-256-PLUS".to_ascii() + PoolByteArray([0]) + len_client_first_message + client_first_message.to_utf8())
+									
+									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+										stream_peer_ssl.put_data(sasl_initial_response)
+									else:
+										peer.put_data(sasl_initial_response)
+									
+									response_buffer = PoolByteArray()
+									return
+								"SCRAM-SHA-1":
+									# No implemented.
+									pass
+								"SCRAM-SHA-1-PLUS":
+									# No implemented.
+									pass
+								"CRAM-MD5":
+									# No implemented.
+									pass
+								"CRAM-MD5-PLUS":
+									# No implemented.
+									pass
+						
+						push_error("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
+						
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 					11:
 						### AuthenticationSASLContinue ###
 						
-						# No support
-						push_error("AuthenticationSASLContinue No support")
-						close(false)
+						# Specifies that this message contains a SASL challenge.
+						
+						# SCRAM-SHA-256
+						var server_first_message = response_buffer.subarray(9, message_length).get_string_from_ascii()
+						
+						var server_nonce = server_first_message.split(',')[0].substr(2)
+						var server_salt = Marshalls.base64_to_raw(server_first_message.split(',')[1].substr(2))
+						var server_iterations := int(server_first_message.split(',')[2].substr(2))
+						
+						var client_final_message := "c=biws,r=%s" % [server_nonce]
+						
+						# On devrait passer le mot de passe (password_global) dans la fonction SASLprep (rfc7613) (or SASLprep, rfc4013) non implémenté si desous...
+						salted_password = pbkdf2(HashingContext.HASH_SHA256, password_global.to_utf8(), server_salt, server_iterations)
+						
+						var crypto = Crypto.new()
+						
+						var client_key = crypto.hmac_digest(HashingContext.HASH_SHA256, salted_password, "Client Key".to_ascii())
+						
+						var hashing_context = HashingContext.new()
+						hashing_context.start(HashingContext.HASH_SHA256)
+						hashing_context.update(client_key)
+						var stored_key = hashing_context.finish()
+						
+						# AuthMessage is just a concatenation of the initial client message, server challenge, and client response (without ClientProof).
+						var client_first_message_bare = client_first_message.substr(3)
+						
+						client_first_message = ""
+						
+						auth_message = client_first_message_bare + ',' + server_first_message + ',' + client_final_message
+						var client_signature = crypto.hmac_digest(HashingContext.HASH_SHA256, stored_key, auth_message.to_utf8())
+						
+						var client_proof_buffer := PoolByteArray()
+						for index in client_key.size():
+							client_proof_buffer.append(client_key[index] ^ client_signature[index])
+						
+						var client_proof := Marshalls.raw_to_base64(client_proof_buffer)
+						
+						client_final_message += ",p=" + client_proof
+						
+						var authentication_sasl_continue := request('p', client_final_message.to_ascii())
+						
+						if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+							stream_peer_ssl.put_data(authentication_sasl_continue)
+						else:
+							peer.put_data(authentication_sasl_continue)
 					12:
 						### AuthenticationSASLFinal ###
 						
-						# No support
-						push_error("AuthenticationSASLFinal No support")
-						close(false)
+						# Specifies that SASL authentication has completed.
+						
+						var server_final_message = response_buffer.subarray(9, message_length).get_string_from_ascii()
+						
+						# The client verifies the proof from the server by calculating the ServerKey and the ServerSignature, then comparing its ServerSignature to that received from the server.
+						# If they are the same, the client has proof that the server has access to the ServerKey.
+						
+						var crypto = Crypto.new()
+						
+						var server_key = crypto.hmac_digest(HashingContext.HASH_SHA256, salted_password, "Server Key".to_ascii())
+						
+						salted_password = PoolByteArray()
+						
+						var server_signature = crypto.hmac_digest(HashingContext.HASH_SHA256, server_key, auth_message.to_utf8())
+						
+						auth_message = ""
+						
+						var server_proof := PoolByteArray()
+						for index in server_key.size():
+							server_proof.append(server_key[index] ^ server_signature[index])
+						
+						# Get server proof response
+						var server_proof_response = server_final_message.substr(2)
+						
+						if server_proof_response != Marshalls.raw_to_base64(server_signature):
+							# /!\ We should normally trigger the "authentication_error" signal but it is still not implemented... /!\
+							push_error("[PostgreSQLClient:%d] An error occurred during SASL authentication. The SCRAM dialogue between the frontend and the backend does not end as expected. The server could not prove that it was in possession of ServerKey. The backend does not seem reliable for the frontend. The authentication attempt failed. Connection between frontend and backend interrupted." % [get_instance_id()])
+							
+							close(false)
+							
+							response_buffer = PoolByteArray()
+							return
 					_:
-						push_error("[PostgreSQLClient:%d] Unknown authentication code." % [get_instance_id()])
+						push_error("[PostgreSQLClient:%d] The backend requires the frontend to use an authentication method that it does not support. Unknown authentication code." % [get_instance_id()])
 						
 						close(false)
+						
+						response_buffer = PoolByteArray()
+						return
 			'S':
 				### ParameterStatus ###
 				
@@ -1217,11 +1574,11 @@ func reponce_parser(response: PoolByteArray):
 				buffer.put_data(number_of_fields_in_a_row)
 				buffer.seek(4)
 				
-				postgresql_query_result_instance.number_of_fields_in_a_row = buffer.get_16()
+				postgresql_query_result_instance.number_of_fields_in_a_row = buffer.get_u16()
 				
 				# Then, for each field...
 				var cursor := 7
-				for _i in postgresql_query_result_instance.number_of_fields_in_a_row:
+				for _index in postgresql_query_result_instance.number_of_fields_in_a_row:
 					# Get the field name.
 					var field_name := ""
 					
@@ -1244,7 +1601,7 @@ func reponce_parser(response: PoolByteArray):
 					buffer.put_data(table_object_id)
 					buffer.seek(0)
 					
-					table_object_id = buffer.get_32()
+					table_object_id = buffer.get_u32()
 					
 					# Get the attribute number of the column.
 					# If the field can be identified as a column of a specific table, the attribute number of the column; otherwise zero.
@@ -1254,7 +1611,7 @@ func reponce_parser(response: PoolByteArray):
 					buffer.put_data(column_index)
 					buffer.seek(4)
 					
-					column_index = buffer.get_16()
+					column_index = buffer.get_u16()
 					
 					# Get the object ID of the field's data type.
 					var type_object_id = response_buffer.subarray(cursor + 7, cursor + 10)
@@ -1263,9 +1620,9 @@ func reponce_parser(response: PoolByteArray):
 					buffer.put_data(type_object_id)
 					buffer.seek(6)
 					
-					type_object_id = buffer.get_32()
+					type_object_id = buffer.get_u32()
 					
-					# Get the data type size.
+					# Get the data type size (see pg_type.typlen).
 					# Note that negative values denote variable-width types.
 					var data_type_size = response_buffer.subarray(cursor + 11, cursor + 12)
 					data_type_size.invert()
@@ -1273,9 +1630,9 @@ func reponce_parser(response: PoolByteArray):
 					buffer.put_data(data_type_size)
 					buffer.seek(10)
 					
-					data_type_size = buffer.get_16()
+					data_type_size = buffer.get_u16()
 					
-					# Get the type modifier.
+					# Get the type modifier (see pg_attribute.atttypmod).
 					# The meaning of the modifier is type-specific.
 					var type_modifier = response_buffer.subarray(cursor + 13, cursor + 16)
 					type_modifier.invert()
@@ -1283,17 +1640,18 @@ func reponce_parser(response: PoolByteArray):
 					buffer.put_data(type_modifier)
 					buffer.seek(12)
 					
-					type_modifier = buffer.get_32()
+					type_modifier = buffer.get_u32()
 					
 					# Get the format code being used for the field.
-					# Currently will be zero (text) or one (binary). In a RowDescription returned from the statement variant of Describe, the format code is not yet known and will always be zero.
+					# Currently will be zero (text) or one (binary).
+					# In a RowDescription returned from the statement variant of Describe, the format code is not yet known and will always be zero.
 					var format_code = response_buffer.subarray(cursor + 17, cursor + 18)
 					format_code.invert()
 					
 					buffer.put_data(format_code)
 					buffer.seek(16)
 					
-					format_code = buffer.get_16()
+					format_code = buffer.get_u16()
 					
 					cursor += 19
 					
@@ -1311,16 +1669,54 @@ func reponce_parser(response: PoolByteArray):
 				### FunctionCallResponse ###
 				
 				# Identifies the message as a function call result.
-				print("FunctionCallResponse no implemented.")
+				push_error("FunctionCallResponse no implemented.")
 			'W':
 				### CopyBothResponse ###
 				
-				# Identifies the message as a Start Copy Both response. This message is used only for Streaming Replication.
-				print("CopyBothResponse no implemented.")
+				# The message "CopyBothResponse" identifies the message as a Start Copy Both response. This message is used only for Streaming Replication.
+				
+				buffer = StreamPeerBuffer.new()
+				
+				# Get overall copy format code.
+				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
+				var overall_copy_format_code = response_buffer.subarray(5, 6)
+				overall_copy_format_code.invert()
+				
+				buffer.put_data(overall_copy_format_code)
+				buffer.seek(0)
+				
+				overall_copy_format_code = buffer.get_8()
+				
+				# Get the number of columns in the data to be copied.
+				var number_of_columns = response_buffer.subarray(7, 9)
+				number_of_columns.invert()
+				
+				buffer.put_data(number_of_columns)
+				buffer.seek(1)
+				
+				number_of_columns = buffer.get_16()
+				
+				# Get the format codes to be used for each column.
+				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
+				for index in number_of_columns:
+					var format_code = response_buffer.subarray(10, 12)
+					format_code.invert()
+					
+					buffer.put_data(format_code)
+					buffer.seek(2 * index + 3)
+					
+					format_code = buffer.get_16()
+					
+					# The result.
+					print(format_code)
+				
+				push_warning("[PostgreSQLClient:%d] CopyBothResponse, no support." % [get_instance_id()])
 			'Z':
 				### ReadyForQuery ###
 				
 				# Identifies the message type. ReadyForQuery is sent whenever the backend is ready for a new query cycle.
+				
+				# Get current backend transaction status indicator.
 				match char(response_buffer[message_length]):
 					'I':
 						# If idle (if not in a transaction block).
@@ -1329,7 +1725,7 @@ func reponce_parser(response: PoolByteArray):
 						# If in a transaction block.
 						prints("In a transaction block.")
 					'E':
-						# If in a failed transaction block.
+						# If in a failed transaction block (queries will be rejected until block is ended).
 						prints("In a failed transaction block.")
 					_:
 						# We close the connection with the backend if current backend transaction status indicator is not recognized.
@@ -1393,18 +1789,19 @@ func reponce_parser(response: PoolByteArray):
 				# Then, for each parameter, there is the following:
 				var data_types = []
 				var cursor := 7
-				for i in number_of_parameters:
+				for index in number_of_parameters:
 					# Get the object ID of the parameter data type.
 					var object_id = response_buffer.subarray(cursor, cursor + 4)
 					object_id.invert()
 					
 					buffer.put_data(object_id)
-					buffer.seek(cursor + i - 1)
+					buffer.seek(cursor + index - 1)
 					
 					data_types.append(buffer.get_32())
 					
 					cursor += 5
 				
+				# The result.
 				print(data_types)
 			'v':
 				### NegotiateProtocolVersion ###
@@ -1431,7 +1828,7 @@ func reponce_parser(response: PoolByteArray):
 				
 				# Then, for each protocol option not recognized by the server...
 				var cursor := 0
-				for _i in number_of_options:
+				for _index in number_of_options:
 					# Get the option name.
 					pass
 				
@@ -1454,6 +1851,9 @@ func reponce_parser(response: PoolByteArray):
 				pass
 			var message_type:
 				# We close the connection with the backend if the type of message is not recognized.
+				
+				status = Status.STATUS_ERROR
+				
 				push_error("[PostgreSQLClient:%d] The type of message sent by the backend is not recognized (%c)." % [get_instance_id(), message_type])
 				
 				close(false)
