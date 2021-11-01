@@ -121,7 +121,7 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 				error = client.connect_to_host(result.strings[3], port)
 			
 			# Get the fist message of server.
-			if error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			while not (error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED):
 				if ssl:
 					### SSLRequest ###
 					
