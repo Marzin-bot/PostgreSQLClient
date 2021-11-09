@@ -83,7 +83,7 @@ var status_ssl = 0
 
 var global_url = ""
 var startup_message: PoolByteArray
-var next_etape := 0
+var next_etape := false
 var con_ssl: bool
 
 ## Allows you to connect to a Postgresql backend at the specified url.
@@ -126,7 +126,7 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 			#if (error == OK)
 			# Get the fist message of server.
 			if error == OK:
-				next_etape = 1
+				next_etape = true
 			else:
 				print("[PostgreSQLClient:%d] Invalid host Postgres." % [get_instance_id()])
 	else:
