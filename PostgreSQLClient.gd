@@ -82,11 +82,14 @@ var process_backend_secret_key: int
 var status_ssl = 0
 
 var global_url = ""
-
+var startup_message: PackedByteArray
+var next_etape := false
+var con_ssl: bool
 
 ## Allows you to connect to a Postgresql backend at the specified url.
 func connect_to_host(url: String, ssl := true, _connect_timeout := 30) -> int:
 	global_url = url
+	con_ssl = ssl
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
@@ -103,7 +106,7 @@ func connect_to_host(url: String, ssl := true, _connect_timeout := 30) -> int:
 		### StartupMessage ###
 		
 		# "postgres" is the database and user by default.
-		var startup_message = request("", "user".to_ascii_buffer() + PackedByteArray([0]) + result.strings[1].to_utf8_buffer() + PackedByteArray([0]) + "database".to_ascii_buffer() + PackedByteArray([0]) + result.strings[5].to_utf8_buffer() + PackedByteArray([0, 0]))
+		startup_message = request("", "user".to_ascii_buffer() + PackedByteArray([0]) + result.strings[1].to_utf8_buffer() + PackedByteArray([0]) + "database".to_ascii_buffer() + PackedByteArray([0]) + result.strings[5].to_utf8_buffer() + PackedByteArray([0, 0]))
 		
 		password_global = result.strings[2]
 		user_global = result.strings[1]
@@ -114,20 +117,14 @@ func connect_to_host(url: String, ssl := true, _connect_timeout := 30) -> int:
 		if result.strings[4]:
 			port = result.strings[4].to_int()
 		
-		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			stream_peer_ssl.put_data(startup_message)
+		if not client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_NONE:
+			error = client.connect_to_host(result.strings[3], port)
+		
+		# Get the fist message of server.
+		if error == OK:
+			next_etape = true
 		else:
-			if not client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_NONE:
-				error = client.connect_to_host(result.strings[3], port)
-			
-			# Get the fist message of server.
-			if error == OK and client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-				if ssl:
-					### SSLRequest ###
-					
-					set_ssl_connection()
-				else:
-					peer.put_data(startup_message)
+			push_error("[PostgreSQLClient:%d] Invalid host Postgres." % [get_instance_id()])
 	else:
 		status = Status.STATUS_ERROR
 		
@@ -174,6 +171,7 @@ func close(clean_closure := true) -> void:
 		
 		status = Status.STATUS_DISCONNECTED
 		status_ssl = 0
+		next_etape = false
 		busy = false
 		
 		emit_signal("connection_closed", clean_closure)
@@ -286,32 +284,44 @@ func poll() -> void:
 		stream_peer_ssl.poll()
 	
 	if client.is_connected_to_host():
-		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status_ssl == 1:
-			var response = peer.get_data(peer.get_available_bytes())
-			if response[0] == OK:
-				if not response[1].is_empty():
-					match char(response[1][0]):
-						'S':
-							#var crypto = Crypto.new()
-							#var ssl_key = crypto.generate_rsa(4096)
-							#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
-							stream_peer_ssl.connect_to_stream(peer)
-							# stream_peer_ssl.blocking_handshake = false
-							status_ssl = 2
-						'N':
-							status = Status.STATUS_ERROR
-							
-							push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
-							
-							close(false)
-						var value:
-							status = Status.STATUS_ERROR
-							
-							push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
-							
-							close(false)
-			else:
-				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
+		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			if next_etape:
+				if con_ssl:
+					### SSLRequest ###
+					
+					set_ssl_connection()
+				else:
+					peer.put_data(startup_message)
+					startup_message = PackedByteArray()
+				
+				next_etape = false
+			
+			if status_ssl == 1:
+				var response = peer.get_data(peer.get_available_bytes())
+				if response[0] == OK:
+					if not response[1].is_empty():
+						match char(response[1][0]):
+							'S':
+								#var crypto = Crypto.new()
+								#var ssl_key = crypto.generate_rsa(4096)
+								#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
+								stream_peer_ssl.connect_to_stream(peer)
+								# stream_peer_ssl.blocking_handshake = false
+								status_ssl = 2
+							'N':
+								status = Status.STATUS_ERROR
+								
+								push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
+								
+								close(false)
+							var value:
+								status = Status.STATUS_ERROR
+								
+								push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
+								
+								close(false)
+				else:
+					push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
 		
 		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED and busy:
 			var response: Array = [OK, PackedByteArray()]
@@ -329,7 +339,7 @@ func poll() -> void:
 		
 		
 		if status_ssl == 2 and stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			connect_to_host(global_url, false)
+			stream_peer_ssl.put_data(startup_message)
 			
 			status_ssl = 3
 		
@@ -1753,7 +1763,6 @@ func reponce_parser(response: PackedByteArray):
 						close(false)
 						
 						response_buffer.resize(0)
-						return
 				
 				var data_returned := datas_command_sql
 				
@@ -1884,6 +1893,8 @@ func reponce_parser(response: PackedByteArray):
 				push_error("[PostgreSQLClient:%d] The type of message sent by the backend is not recognized (%c)." % [get_instance_id(), message_type])
 				
 				close(false)
+				
+				response_buffer.resize(0)
 		
 		# The response from the server can contain several messages, we read the message then delete the message to be processed to read the next one in the loop.
 		if response_buffer.size() != message_length + 1:
