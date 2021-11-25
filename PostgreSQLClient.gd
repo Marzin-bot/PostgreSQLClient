@@ -28,9 +28,18 @@ enum Status {
 	STATUS_ERROR ## A status representing a PostgreSQLClient in error state.
 }
 
-
 # The statut of the connection.
 var status: Status = Status.STATUS_DISCONNECTED
+
+
+## Secure connection methods.
+enum Secure_connection_method{
+	NONE,
+	SSL,
+	GSSAPI
+}
+
+var secure_connection_method_buffer: Secure_connection_method = Secure_connection_method.NONE
 
 
 enum Transaction_status {
@@ -44,7 +53,7 @@ var user_global: String
 
 var client := StreamPeerTCP.new()
 var peerstream := PacketPeerStream.new()
-var stream_peer_ssl = StreamPeerSSL.new()
+var stream_peer_ssl := StreamPeerSSL.new()
 
 var peer: StreamPeer
 func _init():
@@ -84,12 +93,11 @@ var status_ssl = 0
 var global_url = ""
 var startup_message: PackedByteArray
 var next_etape := false
-var con_ssl: bool
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := true, _connect_timeout := 30) -> int:
+func connect_to_host(url: String, secure_connection_method: int = Secure_connection_method.NONE, _connect_timeout := 30) -> int:
 	global_url = url
-	con_ssl = ssl
+	secure_connection_method_buffer = secure_connection_method
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
@@ -286,7 +294,7 @@ func poll() -> void:
 	if client.is_connected_to_host():
 		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 			if next_etape:
-				if con_ssl:
+				if secure_connection_method_buffer == Secure_connection_method.SSL:
 					### SSLRequest ###
 					
 					set_ssl_connection()
@@ -1336,6 +1344,7 @@ func reponce_parser(response: PackedByteArray):
 						# Specifies that the authentication was successful.
 						
 						status = Status.STATUS_CONNECTING
+						print("ggggg")
 					2:
 						### AuthenticationKerberosV5 ###
 						
