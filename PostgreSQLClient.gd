@@ -58,7 +58,7 @@ func _init() -> void:
 signal connection_closed(was_clean_close)
 
 # No use
-#ignal connection_error() # del /!\
+signal connection_error() # del /!\
 
 ## Triggered when the authentication process failed during contact with the target backend.
 ## The error_object parameter is a dictionary that contains various information during the nature of the error.
@@ -69,7 +69,7 @@ signal authentication_error(error_object)
 ## This is usually a good time to start making requests to the backend with execute ().
 signal connection_established
 
-#signal _data_received
+signal data_received
 
 ################## No use at the moment ###############
 ## The process ID of this backend.
@@ -87,7 +87,7 @@ var next_etape := false
 var con_ssl: bool
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, ssl := false, _connect_timeout := 30) -> int:
+func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	global_url = url
 	con_ssl = ssl
 	var error := 1
@@ -149,7 +149,6 @@ var error_object := {}
 ## If false, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
 ## Has no effect if the frontend is not already connected to the backend.
 func close(clean_closure := true) -> void:
-	var _unused 
 	if status == Status.STATUS_CONNECTED:
 		### Terminate ###
 		
@@ -163,7 +162,7 @@ func close(clean_closure := true) -> void:
 			stream_peer_ssl.disconnect_from_stream()
 		else:
 			if clean_closure:
-				_unused = peer.put_data(request('X', PoolByteArray()))
+				peer.put_data(request('X', PoolByteArray()))
 			
 			client.disconnect_from_host()
 		
@@ -187,14 +186,13 @@ func close(clean_closure := true) -> void:
 ## Returns an Array of PostgreSQLQueryResult. (Can be empty)
 ## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (sof in exceptional cases).
 func execute(sql: String) -> Array:
-	var _unused 
 	if status == Status.STATUS_CONNECTED:
 		var request := request('Q', sql.to_utf8() + PoolByteArray([0]))
 		
 		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 			stream_peer_ssl.put_data(request)
 		else:
-			_unused = peer.put_data(request)
+			peer.put_data(request)
 		
 		while client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED:
 			var reponce := [OK, PoolByteArray()]
@@ -222,7 +220,6 @@ func execute(sql: String) -> Array:
 
 ## Upgrade the connexion to SSL.
 func set_ssl_connection() -> void:
-	var _unused 
 	if stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_CONNECTED:
 		push_warning("[PostgreSQLClient:%d] The connection is already secured with TLS/SSL." % [get_instance_id()])
 	elif client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
@@ -231,13 +228,13 @@ func set_ssl_connection() -> void:
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
-		_unused = buffer.put_data(get_32byte_invert(8, true))
+		buffer.put_data(get_32byte_invert(8, true))
 		
 		# The SSL request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		_unused = buffer.put_data(get_32byte_invert(80877103))
+		buffer.put_data(get_32byte_invert(80877103))
 		
-		_unused = peer.put_data(buffer.data_array)
+		peer.put_data(buffer.data_array)
 		
 		status_ssl = 1
 	else:
@@ -247,20 +244,19 @@ func set_ssl_connection() -> void:
 ##### No use #####
 ## Upgrade the connexion to GSSAPI.
 func set_gssapi_connection() -> void:
-	var _unused
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 		### GSSENCRequest ###
 		
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
-		_unused = buffer.put_data(get_32byte_invert(8, true))
+		buffer.put_data(get_32byte_invert(8, true))
 		
 		# The GSSAPI Encryption request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5680 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		_unused = buffer.put_data(get_32byte_invert(80877104))
+		buffer.put_data(get_32byte_invert(80877104))
 		
-		_unused = peer.put_data(buffer.data_array)
+		peer.put_data(buffer.data_array)
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
@@ -268,7 +264,7 @@ func set_gssapi_connection() -> void:
 ## This function undoes all changes made to the database since the last Commit.
 func rollback(process_id: int, process_key: int) -> void:
 	### CancelRequest ###
-	var _unused 
+	
 	if status == Status.STATUS_CONNECTED:
 		var buffer := StreamPeerBuffer.new()
 		
@@ -279,11 +275,11 @@ func rollback(process_id: int, process_key: int) -> void:
 		
 		message_length.invert()
 		
-		_unused = buffer.put_data(message_length)
+		buffer.put_data(message_length)
 		
 		# The cancel request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5678 in the least 16 significant bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		_unused = buffer.put_data(get_32byte_invert(80877102))
+		buffer.put_data(get_32byte_invert(80877102))
 		
 		# The process ID of the target backend.
 		buffer.put_u32(process_id)
@@ -292,7 +288,7 @@ func rollback(process_id: int, process_key: int) -> void:
 		buffer.put_u32(process_key)
 		
 		
-		_unused = peer.put_data(buffer.data_array.subarray(4, -1))
+		peer.put_data(buffer.data_array.subarray(4, -1))
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
@@ -300,7 +296,6 @@ func rollback(process_id: int, process_key: int) -> void:
 ## Poll the connection to check for incoming messages.
 ## Ideally, it should be called before PostgreSQLClient.execute() for it to work properly and called frequently in a loop.
 func poll() -> void:
-	var _unused 
 	if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 		stream_peer_ssl.poll()
 	
@@ -312,7 +307,7 @@ func poll() -> void:
 					
 					set_ssl_connection()
 				else:
-					_unused = peer.put_data(startup_message)
+					peer.put_data(startup_message)
 					startup_message = PoolByteArray()
 				
 				next_etape = false
@@ -346,7 +341,7 @@ func poll() -> void:
 		
 		
 		if status_ssl == 2 and stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			_unused = connect_to_host(global_url, false)
+			connect_to_host(global_url, false)
 			status_ssl = 3
 		
 		
@@ -363,14 +358,13 @@ func poll() -> void:
 				
 				if servire:
 					if status_ssl == 0:
-						_unused = peer.put_data(servire)
+						peer.put_data(servire)
 					else:
-						_unused = stream_peer_ssl.put_data(servire)
+						stream_peer_ssl.put_data(servire)
 
 
 func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	# Get the size of message.
-	var _unused 
 	var buffer := StreamPeerBuffer.new()
 	
 	buffer.put_u32(message.size() + (4 if type_message else 8))
@@ -383,7 +377,7 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	if type_message:
 		buffer.put_8(ord(type_message))
 	
-	_unused = buffer.put_data(message_length)
+	buffer.put_data(message_length)
 	
 	# If the message is StartupMessage...
 	if not type_message:
@@ -392,9 +386,9 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 		var protocol_minor_version = protocol_major_version - PROTOCOL_VERSION
 		
 		for char_number in str(protocol_major_version).pad_zeros(2) + str(protocol_minor_version).pad_zeros(2):
-			_unused = buffer.put_data(PoolByteArray([int(char_number)]))
+			buffer.put_data(PoolByteArray([int(char_number)]))
 	
-	_unused = buffer.put_data(message)
+	buffer.put_data(message)
 	
 	error_object = {}
 	
@@ -437,7 +431,7 @@ static func pbkdf2(hash_type: int, password: PoolByteArray, salt: PoolByteArray,
 		length = hash_length
 	
 	var output := PoolByteArray()
-	var block_count := ceil(float(length) / float(hash_length))
+	var block_count := ceil(length / hash_length)
 	
 	var buffer := PoolByteArray()
 	buffer.resize(4)
@@ -576,12 +570,11 @@ func reponce_parser(response: PoolByteArray):
 	
 	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and response_buffer.size() > 4:
 		# Get the length of the response.
-		var _unused 
 		var data_length = response_buffer.subarray(1, 4)
 		data_length.invert()
 		
 		var buffer := StreamPeerBuffer.new()
-		_unused = buffer.put_data(data_length)
+		buffer.put_data(data_length)
 		buffer.seek(0)
 		
 		# Message length.
@@ -602,7 +595,7 @@ func reponce_parser(response: PoolByteArray):
 				var process_id = response_buffer.subarray(5, 8)
 				process_id.invert()
 				
-				_unused = buffer.put_data(process_id)
+				buffer.put_data(process_id)
 				buffer.seek(4)
 				
 				process_id = buffer.get_32()
@@ -642,7 +635,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_columns = response_buffer.subarray(5, 6)
 				number_of_columns.invert()
 				
-				_unused = buffer.put_data(number_of_columns)
+				buffer.put_data(number_of_columns)
 				buffer.seek(4)
 				
 				number_of_columns = buffer.get_16()
@@ -657,7 +650,7 @@ func reponce_parser(response: PoolByteArray):
 					value_length.invert()
 					
 					buffer = StreamPeerBuffer.new()
-					_unused = buffer.put_data(value_length)
+					buffer.put_data(value_length)
 					buffer.seek(0)
 					
 					value_length = buffer.get_32()
@@ -1150,7 +1143,7 @@ func reponce_parser(response: PoolByteArray):
 				var overall_copy_format_code = response_buffer.subarray(5, 6)
 				overall_copy_format_code.invert()
 				
-				_unused = buffer.put_data(overall_copy_format_code)
+				buffer.put_data(overall_copy_format_code)
 				buffer.seek(0)
 				
 				overall_copy_format_code = buffer.get_u8()
@@ -1159,7 +1152,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_columns = response_buffer.subarray(7, 9)
 				number_of_columns.invert()
 				
-				_unused = buffer.put_data(number_of_columns)
+				buffer.put_data(number_of_columns)
 				buffer.seek(1)
 				
 				number_of_columns = buffer.get_u16()
@@ -1170,7 +1163,7 @@ func reponce_parser(response: PoolByteArray):
 					var format_code = response_buffer.subarray(10, 12)
 					format_code.invert()
 					
-					_unused = buffer.put_data(format_code)
+					buffer.put_data(format_code)
 					buffer.seek(2 * index + 3)
 					
 					format_code = buffer.get_u16()
@@ -1191,7 +1184,7 @@ func reponce_parser(response: PoolByteArray):
 				var overall_copy_format_code = response_buffer.subarray(5, 6)
 				overall_copy_format_code.invert()
 				
-				_unused = buffer.put_data(overall_copy_format_code)
+				buffer.put_data(overall_copy_format_code)
 				buffer.seek(0)
 				
 				overall_copy_format_code = buffer.get_8()
@@ -1200,7 +1193,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_columns = response_buffer.subarray(7, 9)
 				number_of_columns.invert()
 				
-				_unused = buffer.put_data(number_of_columns)
+				buffer.put_data(number_of_columns)
 				buffer.seek(1)
 				
 				number_of_columns = buffer.get_16()
@@ -1211,7 +1204,7 @@ func reponce_parser(response: PoolByteArray):
 					var format_code = response_buffer.subarray(10, 12)
 					format_code.invert()
 					
-					_unused = buffer.put_data(format_code)
+					buffer.put_data(format_code)
 					buffer.seek(2 * index + 3)
 					
 					format_code = buffer.get_16()
@@ -1295,24 +1288,24 @@ func reponce_parser(response: PoolByteArray):
 				# Identifies the message as cancellation key data. The frontend must save these values if it wishes to be able to issue CancelRequest messages later.
 				
 				# Get the process ID of this backend.
-				var t_process_backend_id = response_buffer.subarray(5, 8)
-				t_process_backend_id.invert()
+				var process_backend_id = response_buffer.subarray(5, 8)
+				process_backend_id.invert()
 				
-				_unused = buffer.put_data(t_process_backend_id)
+				buffer.put_data(process_backend_id)
 				buffer.seek(4)
 				
 				# The result.
-				t_process_backend_id = buffer.get_u32()
+				process_backend_id = buffer.get_u32()
 				
 				# Get the secret key of this backend.
-				var t_process_backend_secret_key = response_buffer.subarray(9, message_length)
-				t_process_backend_secret_key.invert()
+				var process_backend_secret_key = response_buffer.subarray(9, message_length)
+				process_backend_secret_key.invert()
 				
-				_unused = buffer.put_data(t_process_backend_secret_key)
+				buffer.put_data(process_backend_secret_key)
 				buffer.seek(8)
 				
 				# The result.
-				t_process_backend_secret_key = buffer.get_u32()
+				process_backend_secret_key = buffer.get_u32()
 			'R':
 				### Authentication ###
 				
@@ -1322,7 +1315,7 @@ func reponce_parser(response: PoolByteArray):
 				
 				authentication_type_data.invert()
 				
-				_unused = buffer.put_data(authentication_type_data)
+				buffer.put_data(authentication_type_data)
 				buffer.seek(4)
 				
 				var authentication_type := buffer.get_32()
@@ -1432,7 +1425,7 @@ func reponce_parser(response: PoolByteArray):
 									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 										stream_peer_ssl.put_data(sasl_initial_response)
 									else:
-										_unused = peer.put_data(sasl_initial_response)
+										peer.put_data(sasl_initial_response)
 									
 									response_buffer = PoolByteArray()
 									return
@@ -1458,7 +1451,7 @@ func reponce_parser(response: PoolByteArray):
 									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 										stream_peer_ssl.put_data(sasl_initial_response)
 									else:
-										_unused = peer.put_data(sasl_initial_response)
+										peer.put_data(sasl_initial_response)
 									
 									response_buffer = PoolByteArray()
 									return
@@ -1528,7 +1521,7 @@ func reponce_parser(response: PoolByteArray):
 						if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 							stream_peer_ssl.put_data(authentication_sasl_continue)
 						else:
-							_unused = peer.put_data(authentication_sasl_continue)
+							peer.put_data(authentication_sasl_continue)
 					12:
 						### AuthenticationSASLFinal ###
 						
@@ -1592,7 +1585,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_fields_in_a_row := response_buffer.subarray(5, 6)
 				number_of_fields_in_a_row.invert()
 				
-				_unused = buffer.put_data(number_of_fields_in_a_row)
+				buffer.put_data(number_of_fields_in_a_row)
 				buffer.seek(4)
 				
 				postgresql_query_result_instance.number_of_fields_in_a_row = buffer.get_u16()
@@ -1619,7 +1612,7 @@ func reponce_parser(response: PoolByteArray):
 					var table_object_id = response_buffer.subarray(cursor, cursor + 4)
 					table_object_id.invert()
 					
-					_unused = buffer.put_data(table_object_id)
+					buffer.put_data(table_object_id)
 					buffer.seek(0)
 					
 					table_object_id = buffer.get_u32()
@@ -1629,7 +1622,7 @@ func reponce_parser(response: PoolByteArray):
 					var column_index = response_buffer.subarray(cursor + 5, cursor + 6)
 					column_index.invert()
 					
-					_unused = buffer.put_data(column_index)
+					buffer.put_data(column_index)
 					buffer.seek(4)
 					
 					column_index = buffer.get_u16()
@@ -1638,7 +1631,7 @@ func reponce_parser(response: PoolByteArray):
 					var type_object_id = response_buffer.subarray(cursor + 7, cursor + 10)
 					type_object_id.invert()
 					
-					_unused = buffer.put_data(type_object_id)
+					buffer.put_data(type_object_id)
 					buffer.seek(6)
 					
 					type_object_id = buffer.get_u32()
@@ -1648,7 +1641,7 @@ func reponce_parser(response: PoolByteArray):
 					var data_type_size = response_buffer.subarray(cursor + 11, cursor + 12)
 					data_type_size.invert()
 					
-					_unused = buffer.put_data(data_type_size)
+					buffer.put_data(data_type_size)
 					buffer.seek(10)
 					
 					data_type_size = buffer.get_u16()
@@ -1658,7 +1651,7 @@ func reponce_parser(response: PoolByteArray):
 					var type_modifier = response_buffer.subarray(cursor + 13, cursor + 16)
 					type_modifier.invert()
 					
-					_unused = buffer.put_data(type_modifier)
+					buffer.put_data(type_modifier)
 					buffer.seek(12)
 					
 					type_modifier = buffer.get_u32()
@@ -1669,7 +1662,7 @@ func reponce_parser(response: PoolByteArray):
 					var format_code = response_buffer.subarray(cursor + 17, cursor + 18)
 					format_code.invert()
 					
-					_unused = buffer.put_data(format_code)
+					buffer.put_data(format_code)
 					buffer.seek(16)
 					
 					format_code = buffer.get_u16()
@@ -1703,7 +1696,7 @@ func reponce_parser(response: PoolByteArray):
 				var overall_copy_format_code = response_buffer.subarray(5, 6)
 				overall_copy_format_code.invert()
 				
-				_unused = buffer.put_data(overall_copy_format_code)
+				buffer.put_data(overall_copy_format_code)
 				buffer.seek(0)
 				
 				overall_copy_format_code = buffer.get_8()
@@ -1712,7 +1705,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_columns = response_buffer.subarray(7, 9)
 				number_of_columns.invert()
 				
-				_unused = buffer.put_data(number_of_columns)
+				buffer.put_data(number_of_columns)
 				buffer.seek(1)
 				
 				number_of_columns = buffer.get_16()
@@ -1723,7 +1716,7 @@ func reponce_parser(response: PoolByteArray):
 					var format_code = response_buffer.subarray(10, 12)
 					format_code.invert()
 					
-					_unused = buffer.put_data(format_code)
+					buffer.put_data(format_code)
 					buffer.seek(2 * index + 3)
 					
 					format_code = buffer.get_16()
@@ -1802,7 +1795,7 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_parameters = response_buffer.subarray(5, 6)
 				number_of_parameters.invert()
 				
-				_unused = buffer.put_data(number_of_parameters)
+				buffer.put_data(number_of_parameters)
 				buffer.seek(4)
 				
 				number_of_parameters = buffer.get_16()
@@ -1815,7 +1808,7 @@ func reponce_parser(response: PoolByteArray):
 					var object_id = response_buffer.subarray(cursor, cursor + 4)
 					object_id.invert()
 					
-					_unused = buffer.put_data(object_id)
+					buffer.put_data(object_id)
 					buffer.seek(cursor + index - 1)
 					
 					data_types.append(buffer.get_32())
@@ -1833,7 +1826,7 @@ func reponce_parser(response: PoolByteArray):
 				var minor_protocol_version = response_buffer.subarray(5, 8)
 				minor_protocol_version.invert()
 				
-				_unused = buffer.put_data(minor_protocol_version)
+				buffer.put_data(minor_protocol_version)
 				buffer.seek(4)
 				
 				minor_protocol_version = buffer.get_u32()
@@ -1842,13 +1835,13 @@ func reponce_parser(response: PoolByteArray):
 				var number_of_options = response_buffer.subarray(9, 13)
 				number_of_options.invert()
 				
-				_unused = buffer.put_data(number_of_options)
+				buffer.put_data(number_of_options)
 				buffer.seek(8)
 				
 				number_of_options = buffer.get_u32()
 				
 				# Then, for each protocol option not recognized by the server...
-				var _cursor := 0
+				var cursor := 0
 				for _index in number_of_options:
 					# Get the option name.
 					pass
