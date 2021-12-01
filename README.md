@@ -52,7 +52,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 
 | Type | Method |
 | --- | --- |
-| `Error` | connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, connect_timeout: int = 30) |
+| `Error` | connect_to_host(url: String, secure_connection_method: PostgreSQLClient.SecureConnectionMethod = SecureConnectionMethod.NONE, connect_timeout: int = 30) |
 | `Status` | get_status() |
 | `Error` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
