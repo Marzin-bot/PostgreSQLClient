@@ -45,7 +45,7 @@ var secure_connection_method_buffer: SecureConnectionMethod = SecureConnectionMe
 enum TransactionStatus {
 	NOT_IN_A_TRANSACTION_BLOCK, ## Represents one or more querys that is not in a transaction block.
 	IN_A_TRANSACTION_BLOCK, ## Represents one or more querys that are in a transaction block.
-	IN_A_FAILED_TRANSACTION_BLOCK ## Represents one or more querys in a transaction block with a fatal error state.
+	IN_A_FAILED_TRANSACTION_BLOCK ## Represents one or more querys in a transaction block with a error state.
 }
 
 var password_global: String
