@@ -52,9 +52,9 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 
 | Type | Method |
 | --- | --- |
-| `Error` | connect_to_host(url: String, ssl: bool = true, connect_timeout: int = 30) |
+| `Error` | connect_to_host(url: String, secure_connection_method: int = Secure_connection_method.NONE, connect_timeout: int = 30) |
 | `Status` | get_status() |
-| `Array` | execute(sql: String) |
+| `Error` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
 | `void` | set_ssl_connection() |
@@ -68,8 +68,16 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | connection_error() |
 | authentication_error(error_object: Dictionnary) |
 | connection_established() |
+| data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.Transaction_status, datas: Array) |
 
 **ENUMARATIONS:**
+`enum` Secure_connection_method
+
+- NONE = 0 --- Represent a connection that is not secure.
+- SSL = 1 --- Represents a connection secured by an overlay of the SSL/TLS protocol.
+- GSSAPI = 2 --- Represents a connection secured by an overlay of the GSSAPI protocol.
+
+---
 
 `enum` Status
 
@@ -77,6 +85,8 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - STATUS_CONNECTING = 1 --- A status representing a `PostgreSQLClient` that is connecting to a host.
 - STATUS_CONNECTED = 2 --- A status representing a `PostgreSQLClient` that is connected to a host.
 - STATUS_ERROR = 3 --- A status representing a `PostgreSQLClient` in error state.
+
+NOTE: The Status enumeration may not be exposed in future versions.
 
 ---
 
@@ -109,6 +119,14 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 - CIRCLE = 718 --- Postgresql data type of type `circle`.
 
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release.
+
+---
+
+`enum` Transaction_status
+
+- NOT_IN_A_TRANSACTION_BLOCK = 0 ---
+- IN_A_TRANSACTION_BLOCK = 1 ---
+- IN_A_FAILED_TRANSACTION_BLOCK = 2 --- Represents a fatal error state of a transaction block.
 
 ---
 
@@ -173,7 +191,9 @@ The `sql` parameter can contain one or more valid SQL statements. Returns an `Ar
 
 - `Status`  get_status()
 
-Returns the status of the connection (see the Status enumeration). 
+Returns the status of the connection (see the Status enumeration).
+Note that you should be able to use PostgreSQLCient without using it.
+The method may no longer be exposed in the future version.
 
 ---
 
