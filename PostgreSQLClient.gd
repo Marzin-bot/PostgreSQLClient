@@ -443,12 +443,11 @@ static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteAr
 	var buffer := PackedByteArray()
 	buffer.resize(4)
 	
-	var block := 1
-	while block <= block_count:
-		buffer[0] = (block >> 24) & 0xFF
-		buffer[1] = (block >> 16) & 0xFF
-		buffer[2] = (block >> 8) & 0xFF
-		buffer[3] = block & 0xFF
+	for block in block_count:
+		buffer[0] = ((block + 1) >> 24) & 0xFF
+		buffer[1] = ((block + 1) >> 16) & 0xFF
+		buffer[2] = ((block + 1) >> 8) & 0xFF
+		buffer[3] = (block + 1) & 0xFF
 		
 		var key_1 := crypto.hmac_digest(hash_type, password, salt + buffer)
 		var key_2 := key_1
@@ -460,8 +459,6 @@ static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteAr
 				key_2[index] ^= key_1[index]
 		
 		output += key_2
-		
-		block += 1
 	
 	return output.subarray(0, hash_length - 1)
 
