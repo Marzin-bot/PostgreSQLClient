@@ -36,13 +36,13 @@ func _connection_established() -> void:
 	print(error)
 
 
-func _data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.Transaction_status, datas: Array) -> void:
+func _data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.TransactionStatus, datas: Array) -> void:
 	match transaction_status:
-		database.Transaction_status.NOT_IN_A_TRANSACTION_BLOCK:
+		database.TransactionStatus.NOT_IN_A_TRANSACTION_BLOCK:
 			print("NOT_IN_A_TRANSACTION_BLOCK")
-		database.Transaction_status.IN_A_TRANSACTION_BLOCK:
+		database.TransactionStatus.IN_A_TRANSACTION_BLOCK:
 			print("IN_A_TRANSACTION_BLOCK")
-		database.Transaction_status.IN_A_FAILED_TRANSACTION_BLOCK:
+		database.TransactionStatus.IN_A_FAILED_TRANSACTION_BLOCK:
 			print("IN_A_FAILED_TRANSACTION_BLOCK")
 	
 	# The datas variable contains an array of PostgreSQLQueryResult object.
