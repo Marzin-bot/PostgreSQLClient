@@ -71,6 +71,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.TransactionStatus, datas: Array) |
 
 **ENUMARATIONS:**
+
 `enum` SecureConnectionMethod
 
 - NONE = 0 --- Represent a connection that is not secure.
