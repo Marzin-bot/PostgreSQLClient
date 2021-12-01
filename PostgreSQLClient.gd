@@ -33,16 +33,16 @@ var status: Status = Status.STATUS_DISCONNECTED
 
 
 ## Secure connection methods.
-enum Secure_connection_method{
+enum SecureConnectionMethod{
 	NONE, ## Represent a connection that is not secure.
 	SSL, ## Represents a connection secured by an overlay of the SSL/TLS protocol.
 	GSSAPI ## Represents a connection secured by an overlay of the GSSAPI protocol.
 }
 
-var secure_connection_method_buffer: Secure_connection_method = Secure_connection_method.NONE
+var secure_connection_method_buffer: SecureConnectionMethod = SecureConnectionMethod.NONE
 
 
-enum Transaction_status {
+enum TransactionStatus {
 	NOT_IN_A_TRANSACTION_BLOCK, 
 	IN_A_TRANSACTION_BLOCK,
 	IN_A_FAILED_TRANSACTION_BLOCK ## Represents a fatal error state of a transaction block.
@@ -95,7 +95,7 @@ var startup_message: PackedByteArray
 var next_etape := false
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, secure_connection_method: int = Secure_connection_method.NONE, _connect_timeout := 30) -> int:
+func connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, _connect_timeout := 30) -> int:
 	global_url = url
 	secure_connection_method_buffer = secure_connection_method
 	var error := 1
@@ -294,7 +294,7 @@ func poll() -> void:
 	if client.is_connected_to_host():
 		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 			if next_etape:
-				if secure_connection_method_buffer == Secure_connection_method.SSL:
+				if secure_connection_method_buffer == SecureConnectionMethod.SSL:
 					### SSLRequest ###
 					
 					set_ssl_connection()
@@ -635,7 +635,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Identifies the message as a data row.
 				
-				# Number of column values ​​that follow (can be zero).
+				# Number of column values that follow (can be zero).
 				var number_of_columns = response_buffer.subarray(5, 6)
 				number_of_columns.reverse()
 				
@@ -1344,7 +1344,6 @@ func reponce_parser(response: PackedByteArray):
 						# Specifies that the authentication was successful.
 						
 						status = Status.STATUS_CONNECTING
-						print("ggggg")
 					2:
 						### AuthenticationKerberosV5 ###
 						
@@ -1749,24 +1748,24 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message type. ReadyForQuery is sent whenever the backend is ready for a new query cycle.
 				
 				# Get current backend transaction status indicator.
-				var transaction_status: Transaction_status
+				var transaction_status: TransactionStatus
 				
 				match char(response_buffer[message_length]):
 					'I':
 						### NOT IN A TRANSACTION_BLOCK ###
 						
 						# If idle (if not in a transaction block).
-						transaction_status = Transaction_status.NOT_IN_A_TRANSACTION_BLOCK
+						transaction_status = TransactionStatus.NOT_IN_A_TRANSACTION_BLOCK
 					'T':
 						### IN A TRANSACTION BLOCK ###
 						
 						# If in a transaction block.
-						transaction_status = Transaction_status.IN_A_TRANSACTION_BLOCK
+						transaction_status = TransactionStatus.IN_A_TRANSACTION_BLOCK
 					'E':
 						### IN A FAILED TRANSACTION BLOCK ###
 						
 						# If in a failed transaction block (queries will be rejected until block is ended).
-						transaction_status = Transaction_status.IN_A_FAILED_TRANSACTION_BLOCK
+						transaction_status = TransactionStatus.IN_A_FAILED_TRANSACTION_BLOCK
 					_:
 						# We close the connection with the backend if current backend transaction status indicator is not recognized.
 						close(false)
