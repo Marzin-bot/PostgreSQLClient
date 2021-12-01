@@ -34,18 +34,18 @@ var status: Status = Status.STATUS_DISCONNECTED
 
 ## Secure connection methods.
 enum Secure_connection_method{
-	NONE,
-	SSL,
-	GSSAPI
+	NONE, ## Represent a connection that is not secure.
+	SSL, ## Represents a connection secured by an overlay of the SSL/TLS protocol.
+	GSSAPI ## Represents a connection secured by an overlay of the GSSAPI protocol.
 }
 
 var secure_connection_method_buffer: Secure_connection_method = Secure_connection_method.NONE
 
 
 enum Transaction_status {
-	NOT_IN_A_TRANSACTION_BLOCK,
+	NOT_IN_A_TRANSACTION_BLOCK, 
 	IN_A_TRANSACTION_BLOCK,
-	IN_A_FAILED_TRANSACTION_BLOCK
+	IN_A_FAILED_TRANSACTION_BLOCK ## Represents a fatal error state of a transaction block.
 }
 
 var password_global: String
