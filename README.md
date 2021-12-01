@@ -52,7 +52,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 
 | Type | Method |
 | --- | --- |
-| `Error` | connect_to_host(url: String, secure_connection_method: int = Secure_connection_method.NONE, connect_timeout: int = 30) |
+| `Error` | connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, connect_timeout: int = 30) |
 | `Status` | get_status() |
 | `Error` | execute(sql: String) |
 | `void` | rollback(process_id: int, process_key: int) |
@@ -68,10 +68,10 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | connection_error() |
 | authentication_error(error_object: Dictionnary) |
 | connection_established() |
-| data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.Transaction_status, datas: Array) |
+| data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.TransactionStatus, datas: Array) |
 
 **ENUMARATIONS:**
-`enum` Secure_connection_method
+`enum` SecureConnectionMethod
 
 - NONE = 0 --- Represent a connection that is not secure.
 - SSL = 1 --- Represents a connection secured by an overlay of the SSL/TLS protocol.
@@ -122,7 +122,7 @@ NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will 
 
 ---
 
-`enum` Transaction_status
+`enum` TransactionStatus
 
 - NOT_IN_A_TRANSACTION_BLOCK = 0 ---
 - IN_A_TRANSACTION_BLOCK = 1 ---
@@ -167,7 +167,7 @@ For security reasons, the dictionary is empty when the frontend is not connected
 ---
 
 **Method Descriptions**
-- `Error`  connect_to_host(url: String, ssl: bool = true, connect_timeout: int = 30)
+- `Error`  connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, connect_timeout: int = 30)
 
 Allows you to connect to a Postgresql backend at the specified `url`.
 
