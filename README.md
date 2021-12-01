@@ -125,9 +125,9 @@ NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will 
 
 `enum` TransactionStatus
 
-- NOT_IN_A_TRANSACTION_BLOCK = 0 ---
-- IN_A_TRANSACTION_BLOCK = 1 ---
-- IN_A_FAILED_TRANSACTION_BLOCK = 2 --- Represents a fatal error state of a transaction block.
+- NOT_IN_A_TRANSACTION_BLOCK = 0 --- Represents one or more querys that is not in a transaction block.
+- IN_A_TRANSACTION_BLOCK = 1 --- Represents one or more querys that are in a transaction block.
+- IN_A_FAILED_TRANSACTION_BLOCK = 2 --- Represents one or more querys in a transaction block with a fatal error state.
 
 ---
 
