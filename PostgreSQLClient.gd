@@ -74,7 +74,7 @@ signal authentication_error(error_object)
 
 ## Trigger when the connection between the frontend and the backend is established.
 ## This is usually a good time to start making requests to the backend with execute ().
-signal connection_established
+signal connection_established()
 
 ## Returns an Array of PostgreSQLQueryResult. (Can be empty)
 ## There are as many PostgreSQLQueryResult elements in the array as there are SQL statements in sql (except in exceptional cases).
