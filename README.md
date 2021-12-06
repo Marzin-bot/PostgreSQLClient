@@ -46,7 +46,6 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | --- | --- | --- |
 | `float` | PROTOCOL_VERSION *const* | 3.0 |
 | `Dictionary` | parameter_status *reader alone* | {} |
-| `Dictionary` | error_object *reader alone* | {} |
 
 **METHODS:**
 
@@ -156,17 +155,6 @@ Example of a typical value that a backend might return. Values may differ depend
 
 ---
 
-- `Dictionary` error_object *reader alone*
-
-Default value: `{}`
-
-A dictionary which contains various information on the execution errors of the last requests made on the backend (usually after using the `execute()` method).
-If the dictionary is empty, it means that the backend did not detect any error in the query.
-Should be used ideally after each use of the `execute()` method.
-For security reasons, the dictionary is empty when the frontend is not connected to the backend.
-
----
-
 **Method Descriptions**
 - `Error`  connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, connect_timeout: int = 30)
 
@@ -183,10 +171,10 @@ Old servers can be an exception. Passing the parameter to `true` is advisable fo
 
 ---
 
-- `Array`  execute(sql: String)
+- `Error`  execute(sql: String)
 
 Allows to send an SQL string to the backend that should run.
-The `sql` parameter can contain one or more valid SQL statements. Returns an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (except in exceptional cases).
+The `sql` parameter can contain one or more valid SQL statements.
 
 ---
 
@@ -250,6 +238,17 @@ The error_object parameter is a dictionary that contains various information dur
 - connection_established()
 
 Trigger when the connection between the frontend and the backend is established. This is usually a good time to start making requests to the backend with `execute ()`.
+
+---
+
+- data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.TransactionStatus, datas: Array)
+
+A dictionary which contains various information on the execution errors of the last requests made on the backend (usually after using the `execute()` method).
+If the dictionary is empty, it means that the backend did not detect any error in the query.
+Should be used ideally after each use of the `execute()` method.
+For security reasons, the dictionary is empty when the frontend is not connected to the backend.
+
+`datas` an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (except in exceptional cases).
 
 ---
 
