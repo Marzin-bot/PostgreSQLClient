@@ -243,12 +243,13 @@ Trigger when the connection between the frontend and the backend is established.
 
 - data_received(error_object: Dictionary, transaction_status: PostgreSQLClient.TransactionStatus, datas: Array)
 
-A dictionary which contains various information on the execution errors of the last requests made on the backend (usually after using the `execute()` method).
-If the dictionary is empty, it means that the backend did not detect any error in the query.
-Should be used ideally after each use of the `execute()` method.
-For security reasons, the dictionary is empty when the frontend is not connected to the backend.
+Emitted when data is sent by the backend, usually after using the `execute()` method.
+It is also possible for the backend to send data which is not expressly requested by the frontend command flow so you should handle unsolicited messages to avoid any issues.
 
-`datas` an `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (except in exceptional cases).
+The `error_object` parameter is a `Dictionary` which contains various information on the execution errors of the last requests made on the backend (usually after using the `execute()` method).
+If the dictionary is empty, it means that the backend did not detect any error in the query.
+
+The `datas` parameter is a `Array` of `PostgreSQLQueryResult`. There are as many `PostgreSQLQueryResult` elements in the array as there are SQL statements in `sql` (except in exceptional cases).
 
 ---
 
