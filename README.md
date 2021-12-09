@@ -57,7 +57,7 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | `Error` | connect_to_host(url: String, ssl: bool = false, connect_timeout: int = 30) |
 | `Status` | get_status() |
 | `Array` | execute(sql: String) |
-| `void` | rollback(process_id: int, process_key: int, secure_connection_method: int = SecureConnectionMethod.NONE) |
+| `void` | rollback(process_id: int, process_key: int) |
 | `void` | close(clean_closure: bool = true) |
 | `void` | poll() |
 
