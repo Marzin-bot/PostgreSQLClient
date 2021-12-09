@@ -54,9 +54,8 @@ PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 | `Error` | connect_to_host(url: String, secure_connection_method: PostgreSQLClient.SecureConnectionMethod = SecureConnectionMethod.NONE, connect_timeout: int = 30) |
 | `Status` | get_status() |
 | `Error` | execute(sql: String) |
-| `void` | rollback(process_id: int, process_key: int) |
+| `void` | rollback(process_id: int, process_key: int, secure_connection_method: int = SecureConnectionMethod.NONE) |
 | `void` | close(clean_closure: bool = true) |
-| `void` | set_ssl_connection() |
 | `void` | poll() |
 
 **SIGNALS:**
@@ -186,7 +185,7 @@ The method may no longer be exposed in the future version.
 
 ---
 
-- `void`  rollback(process_id : int, process_key : int)
+- `void`  rollback(process_id : int, process_key : int, secure_connection_method: int = SecureConnectionMethod.NONE)
 
 Do not use because it is too unstable, will be subject to modification in future versions.
 
@@ -197,13 +196,6 @@ Do not use because it is too unstable, will be subject to modification in future
 Allows you to close the connection with the backend. If clean_closure is `true`, the frontend will notify the backend that it requests to close the connection. If `false`, the frontend forcibly closes the connection without notifying the backend (not recommended except in exceptional cases).
 
 Has no effect if the frontend is not already connected to the backend.
-
----
-
-- `void`  set_ssl_connection()
-
-Not working at the moment, don't use it. will be subject to change in future versions.
-If you want to establish a secure SSL/TLS connection with the backend, you have to do it with `connect_to_host()` by setting the `ssl` parameter to `true`.
 
 ---
 
