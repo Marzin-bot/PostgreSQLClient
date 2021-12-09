@@ -210,7 +210,7 @@ func execute(sql: String) -> int:
 	return ERR_CANT_CONNECT
 
 
-## Upgrade the connexion to SSL.
+# Upgrade the connexion to SSL.
 func set_ssl_connection() -> void:
 	if stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_CONNECTED:
 		push_warning("[PostgreSQLClient:%d] The connection is already secured with TLS/SSL." % [get_instance_id()])
@@ -234,7 +234,7 @@ func set_ssl_connection() -> void:
 
 
 ##### No use #####
-## Upgrade the connexion to GSSAPI.
+# Upgrade the connexion to GSSAPI.
 func set_gssapi_connection() -> void:
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 		### GSSENCRequest ###
@@ -254,7 +254,7 @@ func set_gssapi_connection() -> void:
 
 
 ## This function undoes all changes made to the database since the last Commit.
-func rollback(process_id: int, process_key: int) -> void:
+func rollback(process_id: int, process_key: int, _secure_connection_method: int = SecureConnectionMethod.NONE) -> void:
 	### CancelRequest ###
 	
 	if status == Status.STATUS_CONNECTED:
