@@ -6,6 +6,8 @@ Godot PostgreSQL Client is a GDscript script / class that allows you to connect 
 
 The class is written in pure GDScript which allows it not to depend on GDNative. This makes it ultra portable for many platforms. You can see a taste of using the Postgresql connector for Godot 4.x in the "Helloworld.gd" file.
 
+/!\ You should not use this version of postgreSQLClient as it is not finalized and may work differently in the future. While waiting for its stable version, please use the module version in the main branch. /!\
+
 INSTALLATION PROCEDURE:
 =======================
 It is assumed that you have installed the latest version of PostgreSQL and that you have created a database.
