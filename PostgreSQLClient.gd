@@ -29,7 +29,7 @@ enum Status {
 }
 
 # The statut of the connection.
-var status: Status = Status.STATUS_DISCONNECTED
+var status = Status.STATUS_DISCONNECTED
 
 
 ## Secure connection methods.
@@ -39,7 +39,7 @@ enum SecureConnectionMethod{
 	GSSAPI ## Represents a connection secured by an overlay of the GSSAPI protocol.
 }
 
-var secure_connection_method_buffer: SecureConnectionMethod = SecureConnectionMethod.NONE
+var secure_connection_method_buffer = SecureConnectionMethod.NONE
 
 
 enum TransactionStatus {
@@ -101,7 +101,7 @@ func connect_to_host(url: String, secure_connection_method: int = SecureConnecti
 	var error := 1
 	
 	# If the fontend was already connected to the backend, we disconnect it before reconnecting.
-	if status is Status.STATUS_CONNECTED:
+	if status == Status.STATUS_CONNECTED:
 		close(false)
 	
 	var regex = RegEx.new()
@@ -294,7 +294,7 @@ func poll() -> void:
 	if client.is_connected_to_host():
 		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 			if next_etape:
-				if secure_connection_method_buffer is SecureConnectionMethod.SSL:
+				if secure_connection_method_buffer == SecureConnectionMethod.SSL:
 					### SSLRequest ###
 					
 					set_ssl_connection()
@@ -473,7 +473,7 @@ enum DataTypePostgreSQL {
 	TEXT = 25,
 	CHARACTER = 1042, # Alias CHAR.
 	CHARACTER_VARYING = 1043, # Alias VARCHAR.
-	JSON = 114,
+	JSON_ = 114,
 	JSONB = 3802,
 	XML = 142,
 	BITEA = 17,
@@ -790,7 +790,7 @@ func reponce_parser(response: PackedByteArray):
 									
 									response_buffer.resize(0)
 									return
-							DataTypePostgreSQL.JSON:
+							DataTypePostgreSQL.JSON_:
 								### JSON ###
 								
 								# The type returned is String.
