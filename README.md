@@ -95,7 +95,7 @@ NOTE: The Status enumeration may not be exposed in future versions.
 - TEXT = 25 --- Postgresql data type of type `text`.
 - CHARACTER = 1042 --- Postgresql data type of type `character` *alias* `char`.
 - CHARACTER_VARYING = 3802 --- Postgresql data type of type `character varying` *alias* `varchar`.
-- JSON = 114 --- Postgresql data type of type `json`.
+- JSON_ = 114 --- Postgresql data type of type `json`.
 - JSONB = 3802 --- Postgresql data type of type `jsonb`.
 - XML = 142 --- Postgresql data type of type `xml`.
 - BITEA = 17 --- Postgresql data type of type `bitea`.
