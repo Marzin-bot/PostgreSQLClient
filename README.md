@@ -8,6 +8,9 @@ The class is written in pure GDScript which allows it not to depend on GDNative.
 
 There are still some minor features to add but now the script is ready for production.
 
+There is also a version for Godot 4 which fixes some nasty errors in postgreSQLClient.
+Next semester, I will no longer support Godot 3.x, instead I will support Godot 4 (alpha branch of the repository currently not finalized).
+
 INSTALLATION PROCEDURE:
 =======================
 It is assumed that you have installed the latest version of PostgreSQL and that you have created a database.
