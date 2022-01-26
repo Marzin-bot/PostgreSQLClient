@@ -33,7 +33,7 @@ var status = Status.STATUS_DISCONNECTED
 
 
 ## Secure connection methods.
-enum SecureConnectionMethod{
+enum SecureConnectionMethod {
 	NONE, ## Represent a connection that is not secure.
 	SSL, ## Represents a connection secured by an overlay of the SSL/TLS protocol.
 	GSSAPI ## Represents a connection secured by an overlay of the GSSAPI protocol.
@@ -280,7 +280,7 @@ func rollback(process_id: int, process_key: int, _secure_connection_method: int 
 		buffer.put_u32(process_key)
 		
 		
-		peer.put_data(buffer.data_array.slice(4, -1))
+		peer.put_data(buffer.data_array.slice(4))
 	else:
 		push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 
@@ -356,6 +356,7 @@ func poll() -> void:
 			var reponce: Array
 			
 			if status_ssl == 0:
+				# /!\ BUG /!\ #
 				reponce = peer.get_data(peer.get_available_bytes())
 			else:
 				reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes())
@@ -399,7 +400,7 @@ func request(type_message: String, message := PackedByteArray()) -> PackedByteAr
 	
 	error_object = {}
 	
-	return buffer.data_array.slice(4, -1)
+	return buffer.data_array.slice(4)
 
 
 static func get_32byte_reverse(integer: int, unsigned := false) -> PackedByteArray:
@@ -423,7 +424,7 @@ static func split_pool_byte_array(pool_byte_array: PackedByteArray, delimiter: i
 	
 	for byte in pool_byte_array:
 		if byte == delimiter:
-			array.append(pool_byte_array.slice(from, to))
+			array.append(pool_byte_array.slice(from, to + 1))
 			from = to + 1
 		
 		to += 1
@@ -460,7 +461,7 @@ static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteAr
 		
 		output += key_2
 	
-	return output.slice(0, hash_length - 1)
+	return output.slice(0, hash_length)
 
 
 enum DataTypePostgreSQL {
@@ -571,7 +572,8 @@ func reponce_parser(response: PackedByteArray):
 	
 	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and response_buffer.size() > 4:
 		# Get the length of the response.
-		var data_length = response_buffer.slice(1, 4)
+		var data_length = response_buffer.slice(1, 5)
+		print(data_length)
 		data_length.reverse()
 		
 		var buffer := StreamPeerBuffer.new()
@@ -593,7 +595,7 @@ func reponce_parser(response: PackedByteArray):
 				### NotificationResponse ###
 				
 				# Get the process ID of the notifying backend process.
-				var process_id = response_buffer.slice(5, 8)
+				var process_id = response_buffer.slice(5, 9)
 				process_id.reverse()
 				
 				buffer.put_data(process_id)
@@ -602,7 +604,7 @@ func reponce_parser(response: PackedByteArray):
 				process_id = buffer.get_32()
 				
 				# We get the following parameters.
-				var situation_report_data := split_pool_byte_array(response_buffer.slice(5, message_length), 0)
+				var situation_report_data := split_pool_byte_array(response_buffer.slice(5, message_length + 1), 0)
 				
 				# Get the name of the channel that the notify has been raised on.
 				var name_of_channel: String = situation_report_data[0].get_string_from_utf8()
@@ -618,7 +620,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as a command-completed response.
 				
 				# Get the command tag. This is usually a single word that identifies which SQL command was completed.
-				var command_tag = response_buffer.slice(5, message_length).get_string_from_ascii()
+				var command_tag = response_buffer.slice(5, message_length + 1).get_string_from_ascii()
 				
 				# The result.
 				postgresql_query_result_instance.command_tag = command_tag
@@ -633,7 +635,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as a data row.
 				
 				# Number of column values that follow (can be zero).
-				var number_of_columns = response_buffer.slice(5, 6)
+				var number_of_columns = response_buffer.slice(5, 7)
 				number_of_columns.reverse()
 				
 				buffer.put_data(number_of_columns)
@@ -646,7 +648,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Next, the following pair of fields appear for each column.
 				for i in number_of_columns:
-					var value_length = response_buffer.slice(cursor + 7, cursor + 10)
+					var value_length = response_buffer.slice(cursor + 7, cursor + 11)
 					value_length.reverse()
 					
 					buffer = StreamPeerBuffer.new()
@@ -663,7 +665,7 @@ func reponce_parser(response: PackedByteArray):
 						
 						value_length = 0
 					else:
-						var value_data := response_buffer.slice(cursor + 11, cursor + value_length + 10)
+						var value_data := response_buffer.slice(cursor + 11, cursor + value_length + 12)
 						var error: int
 						
 						match postgresql_query_result_instance.row_description[i]["type_object_id"]:
@@ -1075,7 +1077,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# The message body consists of one or more identified fields, followed by a zero byte as a terminator.
 				# Fields can appear in any order. For each field there is the following:
-				for champ_data in split_pool_byte_array(response_buffer.slice(5, message_length - 1), 0):
+				for champ_data in split_pool_byte_array(response_buffer.slice(5, message_length), 0):
 					var champ: String = champ_data.get_string_from_ascii()
 					
 					# A code identifying the field type; if zero, this is the message terminator and no string follows.
@@ -1154,7 +1156,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Get overall copy format code.
 				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
-				var overall_copy_format_code = response_buffer.slice(5, 6)
+				var overall_copy_format_code = response_buffer.slice(5, 7)
 				overall_copy_format_code.reverse()
 				
 				buffer.put_data(overall_copy_format_code)
@@ -1163,7 +1165,7 @@ func reponce_parser(response: PackedByteArray):
 				overall_copy_format_code = buffer.get_u8()
 				
 				# Get the number of columns in the data to be copied.
-				var number_of_columns = response_buffer.slice(7, 9)
+				var number_of_columns = response_buffer.slice(7, 10)
 				number_of_columns.reverse()
 				
 				buffer.put_data(number_of_columns)
@@ -1174,7 +1176,7 @@ func reponce_parser(response: PackedByteArray):
 				# Get the format codes to be used for each column.
 				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
 				for index in number_of_columns:
-					var format_code = response_buffer.slice(10, 12)
+					var format_code = response_buffer.slice(10, 13)
 					format_code.reverse()
 					
 					buffer.put_data(format_code)
@@ -1195,7 +1197,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Get overall copy format code.
 				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
-				var overall_copy_format_code = response_buffer.slice(5, 6)
+				var overall_copy_format_code = response_buffer.slice(5, 7)
 				overall_copy_format_code.reverse()
 				
 				buffer.put_data(overall_copy_format_code)
@@ -1204,7 +1206,7 @@ func reponce_parser(response: PackedByteArray):
 				overall_copy_format_code = buffer.get_8()
 				
 				# Get the number of columns in the data to be copied.
-				var number_of_columns = response_buffer.slice(7, 9)
+				var number_of_columns = response_buffer.slice(7, 10)
 				number_of_columns.reverse()
 				
 				buffer.put_data(number_of_columns)
@@ -1215,7 +1217,7 @@ func reponce_parser(response: PackedByteArray):
 				# Get the format codes to be used for each column.
 				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
 				for index in number_of_columns:
-					var format_code = response_buffer.slice(10, 12)
+					var format_code = response_buffer.slice(10, 13)
 					format_code.reverse()
 					
 					buffer.put_data(format_code)
@@ -1237,7 +1239,7 @@ func reponce_parser(response: PackedByteArray):
 				# The message body consists of one or more identified fields, followed by a zero byte as a terminator.
 				# Fields can appear in any order.
 				# For each field there is the following:
-				for champ_data in split_pool_byte_array(response_buffer.slice(5, message_length - 1), 0):
+				for champ_data in split_pool_byte_array(response_buffer.slice(5, message_length), 0):
 					var champ: String = champ_data.get_string_from_ascii()
 					
 					# A code identifying the field type; if zero, this is the message terminator and no string follows.
@@ -1302,7 +1304,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as cancellation key data. The frontend must save these values if it wishes to be able to issue CancelRequest messages later.
 				
 				# Get the process ID of this backend.
-				var process_backend_id_buffer = response_buffer.slice(5, 8)
+				var process_backend_id_buffer = response_buffer.slice(5, 9)
 				process_backend_id_buffer.reverse()
 				
 				buffer.put_data(process_backend_id_buffer)
@@ -1312,7 +1314,7 @@ func reponce_parser(response: PackedByteArray):
 				process_backend_id_buffer = buffer.get_u32()
 				
 				# Get the secret key of this backend.
-				var process_backend_secret_key_buffer = response_buffer.slice(9, message_length)
+				var process_backend_secret_key_buffer = response_buffer.slice(9, message_length + 1)
 				process_backend_secret_key_buffer.reverse()
 				
 				buffer.put_data(process_backend_secret_key_buffer)
@@ -1325,15 +1327,15 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Identifies the message as an authentication request.
 				
-				var authentication_type_data := response_buffer.slice(5, 8)
+				var authentication_type_data := response_buffer.slice(5, 10)
 				
 				authentication_type_data.reverse()
-				
+				print(authentication_type_data)
 				buffer.put_data(authentication_type_data)
-				buffer.seek(4)
+				buffer.seek(5)
 				
 				var authentication_type := buffer.get_32()
-				
+				print(authentication_type)
 				match authentication_type:
 					0:
 						### AuthenticationOk ###
@@ -1341,6 +1343,7 @@ func reponce_parser(response: PackedByteArray):
 						# Specifies that the authentication was successful.
 						
 						status = Status.STATUS_CONNECTING
+						print("dfgbdfb")
 					2:
 						### AuthenticationKerberosV5 ###
 						
@@ -1367,7 +1370,7 @@ func reponce_parser(response: PackedByteArray):
 						
 						var hashing_context = HashingContext.new()
 						hashing_context.start(HashingContext.HASH_MD5)
-						hashing_context.update((password_global + user_global).md5_buffer().hex_encode().to_ascii_buffer() + response_buffer.slice(9, 12))
+						hashing_context.update((password_global + user_global).md5_buffer().hex_encode().to_ascii_buffer() + response_buffer.slice(9, 13))
 						
 						response_buffer.resize(0)
 						return request('p', ("md5" + hashing_context.finish().hex_encode()).to_ascii_buffer() + PackedByteArray([0]))
@@ -1419,7 +1422,7 @@ func reponce_parser(response: PackedByteArray):
 						
 						# Get the message body is a list of SASL authentication mechanisms, in the server's order of preference. A zero byte is required as terminator after the last authentication mechanism name.
 						# For each mechanism, there is the following:
-						for name_sasl_authentication_mechanism in split_pool_byte_array(response_buffer.slice(9, message_length - 1), 0):
+						for name_sasl_authentication_mechanism in split_pool_byte_array(response_buffer.slice(9, message_length), 0):
 							match name_sasl_authentication_mechanism.get_string_from_ascii():
 								"SCRAM-SHA-256":
 									### SASLInitialResponse ###
@@ -1494,7 +1497,7 @@ func reponce_parser(response: PackedByteArray):
 						# Specifies that this message contains a SASL challenge.
 						
 						# SCRAM-SHA-256
-						var server_first_message = response_buffer.slice(9, message_length).get_string_from_ascii()
+						var server_first_message = response_buffer.slice(9, message_length + 1).get_string_from_ascii()
 						
 						var server_nonce = server_first_message.split(',')[0].substr(2)
 						var server_salt = Marshalls.base64_to_raw(server_first_message.split(',')[1].substr(2))
@@ -1541,7 +1544,7 @@ func reponce_parser(response: PackedByteArray):
 						
 						# Specifies that SASL authentication has completed.
 						
-						var server_final_message = response_buffer.slice(9, message_length).get_string_from_ascii()
+						var server_final_message = response_buffer.slice(9, message_length + 1).get_string_from_ascii()
 						
 						# The client verifies the proof from the server by calculating the ServerKey and the ServerSignature, then comparing its ServerSignature to that received from the server.
 						# If they are the same, the client has proof that the server has access to the ServerKey.
@@ -1582,7 +1585,7 @@ func reponce_parser(response: PackedByteArray):
 				### ParameterStatus ###
 				
 				# Identifies the message as a run-time parameter status report.
-				var situation_report_data := split_pool_byte_array(response_buffer.slice(5, message_length), 0)
+				var situation_report_data := split_pool_byte_array(response_buffer.slice(5, message_length + 1), 0)
 				
 				# Get the name of the run-time parameter being reported.
 				var parameter: String = situation_report_data[0].get_string_from_utf8()
@@ -1596,7 +1599,7 @@ func reponce_parser(response: PackedByteArray):
 				### RowDescription ###
 				
 				# Get the number of fields in a row (can be zero).
-				var number_of_fields_in_a_row := response_buffer.slice(5, 6)
+				var number_of_fields_in_a_row := response_buffer.slice(5, 7)
 				number_of_fields_in_a_row.reverse()
 				
 				buffer.put_data(number_of_fields_in_a_row)
@@ -1610,7 +1613,7 @@ func reponce_parser(response: PackedByteArray):
 					# Get the field name.
 					var field_name := ""
 					
-					for octet in response_buffer.slice(cursor, message_length):
+					for octet in response_buffer.slice(cursor, message_length + 1):
 						field_name += char(octet)
 						
 						# If we get to the end of the chain, we get out of the loop.
@@ -1623,7 +1626,7 @@ func reponce_parser(response: PackedByteArray):
 					
 					# Get the object ID of the table.
 					# If the field can be identified as a column of a specific table, the object ID of the table; otherwise zero.
-					var table_object_id = response_buffer.slice(cursor, cursor + 4)
+					var table_object_id = response_buffer.slice(cursor, cursor + 5)
 					table_object_id.reverse()
 					
 					buffer.put_data(table_object_id)
@@ -1633,7 +1636,7 @@ func reponce_parser(response: PackedByteArray):
 					
 					# Get the attribute number of the column.
 					# If the field can be identified as a column of a specific table, the attribute number of the column; otherwise zero.
-					var column_index = response_buffer.slice(cursor + 5, cursor + 6)
+					var column_index = response_buffer.slice(cursor + 5, cursor + 7)
 					column_index.reverse()
 					
 					buffer.put_data(column_index)
@@ -1642,7 +1645,7 @@ func reponce_parser(response: PackedByteArray):
 					column_index = buffer.get_u16()
 					
 					# Get the object ID of the field's data type.
-					var type_object_id = response_buffer.slice(cursor + 7, cursor + 10)
+					var type_object_id = response_buffer.slice(cursor + 7, cursor + 11)
 					type_object_id.reverse()
 					
 					buffer.put_data(type_object_id)
@@ -1652,7 +1655,7 @@ func reponce_parser(response: PackedByteArray):
 					
 					# Get the data type size (see pg_type.typlen).
 					# Note that negative values denote variable-width types.
-					var data_type_size = response_buffer.slice(cursor + 11, cursor + 12)
+					var data_type_size = response_buffer.slice(cursor + 11, cursor + 13)
 					data_type_size.reverse()
 					
 					buffer.put_data(data_type_size)
@@ -1662,7 +1665,7 @@ func reponce_parser(response: PackedByteArray):
 					
 					# Get the type modifier (see pg_attribute.atttypmod).
 					# The meaning of the modifier is type-specific.
-					var type_modifier = response_buffer.slice(cursor + 13, cursor + 16)
+					var type_modifier = response_buffer.slice(cursor + 13, cursor + 17)
 					type_modifier.reverse()
 					
 					buffer.put_data(type_modifier)
@@ -1673,7 +1676,7 @@ func reponce_parser(response: PackedByteArray):
 					# Get the format code being used for the field.
 					# Currently will be zero (text) or one (binary).
 					# In a RowDescription returned from the statement variant of Describe, the format code is not yet known and will always be zero.
-					var format_code = response_buffer.slice(cursor + 17, cursor + 18)
+					var format_code = response_buffer.slice(cursor + 17, cursor + 19)
 					format_code.reverse()
 					
 					buffer.put_data(format_code)
@@ -1707,7 +1710,7 @@ func reponce_parser(response: PackedByteArray):
 				
 				# Get overall copy format code.
 				# 0 indicates the overall COPY format is textual (rows separated by newlines, columns separated by separator characters, etc). 1 indicates the overall copy format is binary (similar to DataRow format). See COPY for more information.
-				var overall_copy_format_code = response_buffer.slice(5, 6)
+				var overall_copy_format_code = response_buffer.slice(5, 7)
 				overall_copy_format_code.reverse()
 				
 				buffer.put_data(overall_copy_format_code)
@@ -1716,7 +1719,7 @@ func reponce_parser(response: PackedByteArray):
 				overall_copy_format_code = buffer.get_8()
 				
 				# Get the number of columns in the data to be copied.
-				var number_of_columns = response_buffer.slice(7, 9)
+				var number_of_columns = response_buffer.slice(7, 10)
 				number_of_columns.reverse()
 				
 				buffer.put_data(number_of_columns)
@@ -1727,7 +1730,7 @@ func reponce_parser(response: PackedByteArray):
 				# Get the format codes to be used for each column.
 				# Each must presently be zero (text) or one (binary). All must be zero if the overall copy format is textual.
 				for index in number_of_columns:
-					var format_code = response_buffer.slice(10, 12)
+					var format_code = response_buffer.slice(10, 13)
 					format_code.reverse()
 					
 					buffer.put_data(format_code)
@@ -1799,7 +1802,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as COPY data.
 				
 				# Get data that forms part of a COPY data stream. Messages sent from the backend will always correspond to single data rows.
-				var data := response_buffer.slice(5, message_length)
+				var data := response_buffer.slice(5, message_length + 1)
 				
 				# The result
 				print(data)
@@ -1819,7 +1822,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as a parameter description.
 				
 				# Get the number of parameters used by the statement (can be zero).
-				var number_of_parameters = response_buffer.slice(5, 6)
+				var number_of_parameters = response_buffer.slice(5, 7)
 				number_of_parameters.reverse()
 				
 				buffer.put_data(number_of_parameters)
@@ -1832,7 +1835,7 @@ func reponce_parser(response: PackedByteArray):
 				var cursor := 7
 				for index in number_of_parameters:
 					# Get the object ID of the parameter data type.
-					var object_id = response_buffer.slice(cursor, cursor + 4)
+					var object_id = response_buffer.slice(cursor, cursor + 5)
 					object_id.reverse()
 					
 					buffer.put_data(object_id)
@@ -1850,7 +1853,7 @@ func reponce_parser(response: PackedByteArray):
 				# Identifies the message as a protocol version negotiation message.
 				
 				# Get newest minor protocol version supported by the server for the major protocol version requested by the client.
-				var minor_protocol_version = response_buffer.slice(5, 8)
+				var minor_protocol_version = response_buffer.slice(5, 9)
 				minor_protocol_version.reverse()
 				
 				buffer.put_data(minor_protocol_version)
@@ -1859,7 +1862,7 @@ func reponce_parser(response: PackedByteArray):
 				minor_protocol_version = buffer.get_u32()
 				
 				# Get the number of protocol options not recognized by the server.
-				var number_of_options = response_buffer.slice(9, 13)
+				var number_of_options = response_buffer.slice(9, 14)
 				number_of_options.reverse()
 				
 				buffer.put_data(number_of_options)
@@ -1903,6 +1906,6 @@ func reponce_parser(response: PackedByteArray):
 		
 		# The response from the server can contain several messages, we read the message then delete the message to be processed to read the next one in the loop.
 		if response_buffer.size() != message_length + 1:
-			response_buffer = response_buffer.slice(message_length + 1, -1)
+			response_buffer = response_buffer.slice(message_length + 1)
 		else:
 			response_buffer.resize(0)
