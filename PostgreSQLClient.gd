@@ -445,10 +445,10 @@ static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteAr
 	buffer.resize(4)
 	
 	for block in block_count:
-		buffer[0] = ((block + 1) >> 24) & 0xFF
-		buffer[1] = ((block + 1) >> 16) & 0xFF
-		buffer[2] = ((block + 1) >> 8) & 0xFF
-		buffer[3] = (block + 1) & 0xFF
+		buffer[0] = (int(block + 1) >> 24) & 0xFF
+		buffer[1] = (int(block + 1) >> 16) & 0xFF
+		buffer[2] = (int(block + 1) >> 8) & 0xFF
+		buffer[3] = int(block + 1) & 0xFF
 		
 		var key_1 := crypto.hmac_digest(hash_type, password, salt + buffer)
 		var key_2 := key_1
@@ -1330,12 +1330,12 @@ func reponce_parser(response: PackedByteArray):
 				var authentication_type_data := response_buffer.slice(5, 10)
 				
 				authentication_type_data.reverse()
-				print(authentication_type_data)
+				
 				buffer.put_data(authentication_type_data)
 				buffer.seek(5)
 				
 				var authentication_type := buffer.get_32()
-				print(authentication_type)
+				
 				match authentication_type:
 					0:
 						### AuthenticationOk ###
@@ -1343,7 +1343,6 @@ func reponce_parser(response: PackedByteArray):
 						# Specifies that the authentication was successful.
 						
 						status = Status.STATUS_CONNECTING
-						print("dfgbdfb")
 					2:
 						### AuthenticationKerberosV5 ###
 						
