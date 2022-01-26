@@ -154,7 +154,7 @@ var busy := false
 ## If false, the frontend forcibly closes the connection without notifying the backend (not recommended sof in exceptional cases).
 ## Has no effect if the frontend is not already connected to the backend.
 func close(clean_closure := true) -> void:
-	if status is Status.STATUS_CONNECTED:
+	if status == Status.STATUS_CONNECTED:
 		### Terminate ###
 		
 		# Identifies the message as a termination.
@@ -190,7 +190,7 @@ func close(clean_closure := true) -> void:
 ## Allows to send an SQL string to the backend that should run.
 ## The sql parameter can contain one or more valid SQL statements.
 func execute(sql: String) -> int:
-	if status is Status.STATUS_CONNECTED:
+	if status == Status.STATUS_CONNECTED:
 		if not busy:
 			var request_result := request('Q', sql.to_utf8_buffer() + PackedByteArray([0]))
 			
@@ -257,7 +257,7 @@ func set_gssapi_connection() -> void:
 func rollback(process_id: int, process_key: int, _secure_connection_method: int = SecureConnectionMethod.NONE) -> void:
 	### CancelRequest ###
 	
-	if status is Status.STATUS_CONNECTED:
+	if status == Status.STATUS_CONNECTED:
 		var buffer := StreamPeerBuffer.new()
 		
 		# Length of message contents in bytes, including self.
