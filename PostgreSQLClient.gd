@@ -1909,4 +1909,4 @@ func reponce_parser(response: PackedByteArray):
 			response_buffer.resize(0)
 		
 		if client.get_status() != StreamPeerTCP.STATUS_CONNECTED:
-			break;
+			break
