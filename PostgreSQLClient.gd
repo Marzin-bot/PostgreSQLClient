@@ -356,7 +356,6 @@ func poll() -> void:
 			var reponce: Array
 			
 			if status_ssl == 0:
-				# /!\ BUG /!\ #
 				reponce = peer.get_data(peer.get_available_bytes())
 			else:
 				reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes())
@@ -570,10 +569,10 @@ var auth_message: String # Authentication SASL
 func reponce_parser(response: PackedByteArray):
 	response_buffer += response
 	
-	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and response_buffer.size() > 4:
+	##print(client.get_status() == StreamPeerTCP.STATUS_CONNECTED) #a kick (le même dans le while aussi)
+	while response_buffer.size() > 4:
 		# Get the length of the response.
 		var data_length = response_buffer.slice(1, 5)
-		print(data_length)
 		data_length.reverse()
 		
 		var buffer := StreamPeerBuffer.new()
@@ -1484,7 +1483,7 @@ func reponce_parser(response: PackedByteArray):
 									# No implemented.
 									pass
 						
-						push_error("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
+						print("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
 						
 						close(false)
 						
@@ -1903,8 +1902,11 @@ func reponce_parser(response: PackedByteArray):
 				
 				response_buffer.resize(0)
 		
-		# The response from the server can contain several messages, we read the message then delete the message to be processed to read the next one in the loop.
+		# The server response can be fragmented and can contain several messages, we read the first fragment then we delete it from the buffer to read the next one in the loop.
 		if response_buffer.size() != message_length + 1:
 			response_buffer = response_buffer.slice(message_length + 1)
 		else:
 			response_buffer.resize(0)
+		
+		if client.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			break;
