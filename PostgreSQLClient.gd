@@ -488,7 +488,9 @@ enum DataTypePostgreSQL {
 	BOX = 603,
 	LSEG = 601,
 	LINE = 628,
-	CIRCLE = 718
+	CIRCLE = 718,
+	DATE = 1082,
+	TIME = 1266
 }
 
 
@@ -1060,6 +1062,24 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 									close(false)
 									response_buffer.resize(0)
 									return
+							DataTypePostgreSQL.DATE:
+								### DATE ###
+								
+								# The type returned is Date.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
+							DataTypePostgreSQL.TIME:
+								### TIME ###
+								
+								# The type returned is Time.
+								
+								# Ideally we should validate the value sent by the backend...
+								
+								# The result.
+								row.append(value_data.get_string_from_ascii())
 							_:
 								# The type returned is PackedByteArray.
 								row.append(value_data)
