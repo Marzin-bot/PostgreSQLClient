@@ -664,7 +664,7 @@ func reponce_parser(response: PackedByteArray):
 						
 						value_length = 0
 					else:
-						var value_data := response_buffer.slice(cursor + 11, cursor + value_length + 12)
+						var value_data := response_buffer.slice(cursor + 11, cursor + 11 + value_length)
 						var error: int
 						
 						match postgresql_query_result_instance.row_description[i]["type_object_id"]:
