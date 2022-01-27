@@ -577,7 +577,7 @@ func reponce_parser(response: PoolByteArray):
 	var _unused
 	response_buffer += response
 	
-	while client.get_status() == StreamPeerTCP.STATUS_CONNECTED and response_buffer.size() > 4:
+	while response_buffer.size() > 4:
 		# Get the length of the response.
 		var data_length = response_buffer.subarray(1, 4)
 		data_length.invert()
@@ -1886,3 +1886,6 @@ func reponce_parser(response: PoolByteArray):
 			response_buffer = response_buffer.subarray(message_length + 1, -1)
 		else:
 			response_buffer.resize(0)
+		
+		if client.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			break
