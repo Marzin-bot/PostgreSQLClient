@@ -513,7 +513,13 @@ class PostgreSQLQueryResult:
 	## These elements are native GDscript types that represent the data resulting from the query.
 	var data_row := []
 	
-	## No use
+	## An Array that contains sub-arrays.
+	## These sub-arrays represent for most of the queries the rows of the table where the query was executed.
+	## The number of sub-tables depends on the query that has been made.
+	## These sub-arrays contain as many elements as number_of_fields_in_a_row.
+	## Unlike data_row which contains elements of native GDscript types, raw_data_row contains the raw data sent by the backend which represents the raw data resulting from the query instead of converting it to a native GDScript type.
+	## Note that the frontend does not check the validity of the data, so you have to check the data manually.
+	## Sub-array data types are of type String if row_description.["format_code"] is 0 and of type PackedByteArray if 1.
 	var raw_data_row := []
 	
 	## This is usually a single word that identifies which SQL command was completed.
@@ -645,6 +651,7 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 				
 				var cursor := 0
 				var row := []
+				var raw_row := []
 				
 				# Next, the following pair of fields appear for each column.
 				for i in number_of_columns:
@@ -663,6 +670,7 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 						# The result.
 						row.append(null)
 						
+						raw_row.append(null)
 						value_length = 0
 					else:
 						var value_data := response_buffer.slice(cursor + 11, cursor + 11 + value_length)
@@ -872,10 +880,6 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 								### TIMESTAMP ###
 								
 								pass
-							"DATE":
-								### DATE ###
-								
-								pass
 							"INTERVAL":
 								### INTERVAL ###
 								
@@ -1083,11 +1087,17 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 							_:
 								# The type returned is PackedByteArray.
 								row.append(value_data)
+						
+						if postgresql_query_result_instance.row_description[i]["type_object_id"]: #/!\ A verif /!\
+							raw_row.append(value_data.get_string_from_utf8())
+						else: 
+							raw_row.append(value_data)
 					
 					cursor += value_length + 4
 				
 				# The result.
 				postgresql_query_result_instance.data_row.append(row)
+				postgresql_query_result_instance.raw_data_row.append(raw_row)
 			'E':
 				### ErrorResponse ###
 				
