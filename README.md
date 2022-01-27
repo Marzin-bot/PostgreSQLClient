@@ -111,6 +111,8 @@ NOTE: The Status enumeration may not be exposed in future versions.
 - LSEG = 601 --- Postgresql data type of type `lseg`.
 - LINE = 628 --- Postgresql data type of type `line`.
 - CIRCLE = 718 --- Postgresql data type of type `circle`.
+- DATE = 1082 --- Postgresql data type of type `date`.
+- TIME = 1266 --- Postgresql data type of type `time`.
 
 NOTE: Not all PostgreSQL data types are supported by PostgreSQLClient, but will be in a future release.
 
@@ -329,7 +331,7 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 | `null` | `null` |
 | `smallint`, `integer`, `bigint` | `int` |
 | `real`, `double precision` | `float` |
-| `text`, `character` *alias* `char`, `character varying` *alias* `varchar`, `json`, `jsonb`, `xml`, `cidr`, `inet`, `macaddr`, `macaddr8`, `bit`, `bit varying`, `uuid` | `String` |
+| `text`, `character` *alias* `char`, `character varying` *alias* `varchar`, `json`, `jsonb`, `xml`, `cidr`, `inet`, `macaddr`, `macaddr8`, `bit`, `bit varying`, `uuid`, `date`, `time` | `String` |
 | `bitea` | `PoolByteArray` |
 | `point` | `Vector2` |
 | `box` | `Rect2` |
@@ -338,6 +340,7 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 
 Note:
 - Not all PostgreSQL types are supported yet.
+- I may later change the date and time type to Dictionary, but I'm not sure...
 
 ---
 
