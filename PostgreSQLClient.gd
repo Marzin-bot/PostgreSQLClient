@@ -107,7 +107,7 @@ func connect_to_host(url: String, secure_connection_method: int = SecureConnecti
 	var regex = RegEx.new()
 	# https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 	regex.compile("^(?:postgresql|postgres)://(.+):(.+)@(.+)(:\\d*)/(.+)")
-	
+	#'port=5432 dbname=test_database user=tester password=test_password';
 	var result = regex.search(url)
 	
 	if result:
@@ -566,10 +566,9 @@ var client_first_message: String # Authentication SASL
 var salted_password: PackedByteArray # Authentication SASL
 var auth_message: String # Authentication SASL
 
-func reponce_parser(response: PackedByteArray):
-	response_buffer += response
+func reponce_parser(fragmented_answer: PackedByteArray):
+	response_buffer += fragmented_answer
 	
-	##print(client.get_status() == StreamPeerTCP.STATUS_CONNECTED) #a kick (le même dans le while aussi)
 	while response_buffer.size() > 4:
 		# Get the length of the response.
 		var data_length = response_buffer.slice(1, 5)
@@ -944,7 +943,7 @@ func reponce_parser(response: PackedByteArray):
 								
 								if result:
 									# The result.
-									row.append(Vector2(float(result.strings[1]), float(result.strings[2])))
+									row.append(Vector2(result.strings[1].to_float(), result.strings[2].to_float()))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid POINT object." % [get_instance_id()])
 									
@@ -968,7 +967,7 @@ func reponce_parser(response: PackedByteArray):
 								var result = regex.search(value_data.get_string_from_ascii())
 								if result:
 									# The result.
-									row.append(Rect2(float(result.strings[3]), float(result.strings[4]), float(result.strings[1]), float(result.strings[2])))
+									row.append(Rect2(result.strings[3].to_float(), result.strings[4].to_float(), result.strings[1].to_float(), result.strings[2].to_float()))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid BOX object." % [get_instance_id()])
 									
@@ -993,8 +992,8 @@ func reponce_parser(response: PackedByteArray):
 								if result:
 									# The result.
 									row.append(PackedVector2Array([
-										Vector2(float(result.strings[1]), float(result.strings[2])),
-										Vector2(float(result.strings[3]), float(result.strings[4]))
+										Vector2(result.strings[1].to_float(), result.strings[2].to_float()),
+										Vector2(result.strings[3].to_float(), result.strings[4].to_float())
 									]))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid LSEG object." % [get_instance_id()])
@@ -1030,7 +1029,7 @@ func reponce_parser(response: PackedByteArray):
 								
 								if result:
 									# The result.
-									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
+									row.append(Vector3(result.strings[1].to_float(), result.strings[2].to_float(), result.strings[3].to_float()))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid LINE object." % [get_instance_id()])
 									
@@ -1054,7 +1053,7 @@ func reponce_parser(response: PackedByteArray):
 								var result = regex.search(value_data.get_string_from_ascii())
 								if result:
 									# The result.
-									row.append(Vector3(float(result.strings[1]), float(result.strings[2]), float(result.strings[3])))
+									row.append(Vector3(result.strings[1].to_float(), result.strings[2].to_float(), result.strings[3].to_float()))
 								else:
 									push_error("[PostgreSQLClient:%d] The backend sent an invalid CIRCLE object." % [get_instance_id()])
 									
@@ -1483,7 +1482,7 @@ func reponce_parser(response: PackedByteArray):
 									# No implemented.
 									pass
 						
-						print("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
+						push_error("[PostgreSQLClient:%d] No SASL mechanism offered by the backend is supported by the frontend for SASL authentication." % [get_instance_id()])
 						
 						close(false)
 						
