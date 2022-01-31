@@ -35,7 +35,7 @@ You must use version 3.4.
 
 DONATION:
 ====================================
-This project is developed by an enthusiast who develops it on his free time. If you feel like it, you can buy me a cup of coffee.
+This project is maintained by an enthusiast who develops it in his spare time. If you feel like it, you can buy me a cup of coffee.
 
 <p align="center">
 	<a href="https://paypal.me/MarzinSamuel"><img src="https://raw.githubusercontent.com/Marzin-bot/Ressources/main/paypal_btn_donateCC_LG_1.gif" alt="Donation PayPal"></a>
