@@ -23,6 +23,14 @@ HOW TO USE?:
 ====================================
 Find an example of minimalist use in the <a href="./Helloworld.gd">Helloworld.gd</a> file. Other examples will be provided later.
 
+DONATION:
+====================================
+This project is developed by an enthusiast who develops it on his free time. If you feel like it, you can buy me a cup of coffee.
+
+<p align="center">
+	<a href="https://paypal.me/MarzinSamuel"><img src="https://raw.githubusercontent.com/Marzin-bot/Ressources/main/paypal_btn_donateCC_LG_1.gif" alt="Donation PayPal"></a>
+</p>
+
 FREQUENTLY ASKED QUESTIONS
 ==========================
 
