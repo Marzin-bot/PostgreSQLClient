@@ -207,7 +207,7 @@ func execute(sql: String) -> int:
 	
 	push_error("[PostgreSQLClient:%d] The frontend is not connected to backend." % [get_instance_id()])
 	
-	return ERR_CANT_CONNECT
+	return CONNECTION_ERROR
 
 
 # Upgrade the connexion to SSL.
