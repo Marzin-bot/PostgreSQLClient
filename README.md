@@ -185,7 +185,7 @@ The `sql` parameter can contain one or more valid SQL statements.
 Returns an error which can take the value:
 
 - `OK`, If the value is sent (does not mean that the sql string is valid and does not necessarily mean that the backend will agree to execute the query).
-- `ERR_CANT_CONNECT`, If the fontend is not connected to backend.
+- `ERR_CONNECTION_ERROR`, If the fontend is not connected to backend.
 - `ERR_BUSY`, If the frontend or the backend has not finished processing the previous request. If it is, repeat the request until you get `OK`.
 
 ---
