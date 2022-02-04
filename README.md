@@ -263,7 +263,7 @@ DOCUMENTATION PostgreSQLQueryResult:
 **Descriptions**
 
 The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is not intended to be created manually. It represents the result of an SQL query and provides an information and method report
- to use the result of the query. It is usually returned by the `PostgreSQLClient.execute()` method in an array of `PostgreSQLQueryResult`.
+ to use the result of the query.
 
 **PROPERTIES:**
 
