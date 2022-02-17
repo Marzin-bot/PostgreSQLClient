@@ -31,8 +31,6 @@ You can also watch <a href="https://github.com/finepointcgi">Mitch McCollum (fin
 	<a href="https://youtu.be/4GgevRacFkY"><img src="https://img.youtube.com/vi/4GgevRacFkY/0.jpg" alt="Tuto"></a>
 </p>
 
-You must use version 3.4.
-
 DONATION:
 ====================================
 This project is maintained by an enthusiast who develops it in his spare time. If you feel like it, you can buy me a cup of coffee.
