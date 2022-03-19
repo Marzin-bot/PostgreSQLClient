@@ -98,7 +98,7 @@ func connect_to_host(url: String, ssl := false, connect_timeout := 30) -> int:
 	
 	var regex = RegEx.new()
 	# https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-	regex.compile("^(?:postgresql|postgres)://(.+):(.+)@(.+)(:\\d*)/(.+)")
+	regex.compile("^(?:postgresql|postgres)://(.+):(.+)@(.+[^(::\\d+])(:\\d+)?/(.+)")
 	
 	var result = regex.search(url)
 	
