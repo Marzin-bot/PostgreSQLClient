@@ -106,7 +106,7 @@ func connect_to_host(url: String, secure_connection_method: int = SecureConnecti
 	
 	var regex = RegEx.new()
 	# https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-	regex.compile("^(?:postgresql|postgres)://(.+):(.+)@(.+)(:\\d*)/(.+)")
+	regex.compile("^(?:postgresql|postgres)://(.+):(.+)@(.+):(\\d*)/(.+)")
 	#'port=5432 dbname=test_database user=tester password=test_password';
 	var result = regex.search(url)
 	
