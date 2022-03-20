@@ -383,7 +383,7 @@ func request(type_message: String, message := PoolByteArray()) -> PoolByteArray:
 	
 	# If the message is not StartupMessage...
 	if type_message:
-		buffer.put_u32(ord(type_message))
+		buffer.put_u8(ord(type_message))
 	
 	_unused = buffer.put_data(message_length)
 	
