@@ -347,10 +347,10 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 | `smallint`, `integer`, `bigint` | `int` |
 | `real`, `double precision` | `float` |
 | `text`, `character` *alias* `char`, `character varying` *alias* `varchar`, `json`, `jsonb`, `xml`, `cidr`, `inet`, `macaddr`, `macaddr8`, `bit`, `bit varying`, `uuid`, `date`, `time` | `String` |
-| `bitea` | `PoolByteArray` |
+| `bitea` | `PackedByteArray` |
 | `point` | `Vector2` |
 | `box` | `Rect2` |
-| `lseg` | `PoolVector2Array` |
+| `lseg` | `PackedVector2Array` |
 | `line`, `circle` | `Vector3` |
 
 Note:
