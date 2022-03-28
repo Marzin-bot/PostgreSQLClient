@@ -272,6 +272,7 @@ The `PostgreSQLQueryResult` class is a subclass of `PostgreSQLClient` which is n
 | `int` | number_of_fields_in_a_row *reader alone* | 0 |
 | `Array` | row_description *reader alone* | \[\] |
 | `Array` | data_row *reader alone* | \[\] |
+| `Array` | raw_data_row *reader alone* | \[\] |
 | `String` | command_tag *reader alone* | \"\" |
 | `Dictionary` | notice *reader alone* | {} |
 
@@ -355,6 +356,16 @@ Each row contains the value of 2 fields: The row identifier and a character stri
 Note:
 - Not all PostgreSQL types are supported yet.
 - I may later change the date and time type to Dictionary, but I'm not sure...
+
+---
+
+`Array`  raw_data_row *const*
+
+Default value: `[]`
+
+Unlike `data_row` which contains elements of native GDscript types, raw_data_row contains the raw data sent by the backend which represents the raw data resulting from the query instead of converting it to a native GDScript type.
+Note that the frontend does not check the validity of the data, so you have to check the data manually.
+Sub-array data types are of type `String` if `row_description.["format_code"]` is `0` and of type `PackedByteArray` if `1`.
 
 ---
 
