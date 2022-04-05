@@ -39,7 +39,7 @@ enum SecureConnectionMethod {
 	GSSAPI ## Represents a connection secured by an overlay of the GSSAPI protocol.
 }
 
-var secure_connection_method_buffer = SecureConnectionMethod.NONE
+var secure_connection_method_buffer: SecureConnectionMethod = SecureConnectionMethod.NONE
 
 
 enum TransactionStatus {
@@ -95,7 +95,7 @@ var startup_message: PackedByteArray
 var next_etape := false
 
 ## Allows you to connect to a Postgresql backend at the specified url.
-func connect_to_host(url: String, secure_connection_method: int = SecureConnectionMethod.NONE, _connect_timeout := 30) -> int:
+func connect_to_host(url: String, secure_connection_method: SecureConnectionMethod = SecureConnectionMethod.NONE, _connect_timeout := 30) -> int:
 	global_url = url
 	secure_connection_method_buffer = secure_connection_method
 	var error := 1
@@ -111,6 +111,7 @@ func connect_to_host(url: String, secure_connection_method: int = SecureConnecti
 	var result = regex.search(url)
 	
 	if result:
+		print(result.strings)
 		### StartupMessage ###
 		
 		# "postgres" is the database and user by default.
