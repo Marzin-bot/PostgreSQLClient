@@ -13,6 +13,6 @@ If you feel like it, you can buy me a cup of coffee.
 </p>
 
 
-## DONATEURS
+## DONORS
     
     Christian Kaltenecker
