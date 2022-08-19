@@ -288,10 +288,12 @@ func rollback(process_id: int, process_key: int, _secure_connection_method: int 
 ## Poll the connection to check for incoming messages.
 ## Ideally, it should be called before PostgreSQLClient.execute() for it to work properly and called frequently in a loop.
 func poll() -> void:
-	if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-		stream_peer_ssl.poll()
+	client.poll()
 	
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+			stream_peer_ssl.poll()
+		
 		if next_etape:
 			if secure_connection_method_buffer == SecureConnectionMethod.SSL:
 				### SSLRequest ###
