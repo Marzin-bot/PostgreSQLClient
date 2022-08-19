@@ -126,7 +126,7 @@ func connect_to_host(url: String, secure_connection_method: SecureConnectionMeth
 		if result.strings[4]:
 			port = result.strings[4].to_int()
 		
-		if not client.is_connected_to_host() and client.get_status() == StreamPeerTCP.STATUS_NONE:
+		if client.get_status() == StreamPeerTCP.STATUS_NONE:
 			error = client.connect_to_host(result.strings[3], port)
 		
 		# Get the fist message of server.
@@ -292,47 +292,46 @@ func poll() -> void:
 	if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
 		stream_peer_ssl.poll()
 	
-	if client.is_connected_to_host():
-		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-			if next_etape:
-				if secure_connection_method_buffer == SecureConnectionMethod.SSL:
-					### SSLRequest ###
-					
-					set_ssl_connection()
-				else:
-					peer.put_data(startup_message)
-					startup_message = PackedByteArray()
+	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		if next_etape:
+			if secure_connection_method_buffer == SecureConnectionMethod.SSL:
+				### SSLRequest ###
 				
-				next_etape = false
+				set_ssl_connection()
+			else:
+				peer.put_data(startup_message)
+				startup_message = PackedByteArray()
 			
-			if status_ssl == 1:
-				var response = peer.get_data(peer.get_available_bytes())
-				if response[0] == OK:
-					if not response[1].is_empty():
-						match char(response[1][0]):
-							'S':
-								#var crypto = Crypto.new()
-								#var ssl_key = crypto.generate_rsa(4096)
-								#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
-								stream_peer_ssl.connect_to_stream(peer)
-								# stream_peer_ssl.blocking_handshake = false
-								status_ssl = 2
-							'N':
-								status = Status.STATUS_ERROR
-								
-								push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
-								
-								close(false)
-							var value:
-								status = Status.STATUS_ERROR
-								
-								push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
-								
-								close(false)
-				else:
-					push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
+			next_etape = false
 		
-		if client.get_status() == StreamPeerTCP.STATUS_CONNECTED and status == Status.STATUS_CONNECTED and busy:
+		if status_ssl == 1:
+			var response = peer.get_data(peer.get_available_bytes())
+			if response[0] == OK:
+				if not response[1].is_empty():
+					match char(response[1][0]):
+						'S':
+							#var crypto = Crypto.new()
+							#var ssl_key = crypto.generate_rsa(4096)
+							#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
+							stream_peer_ssl.connect_to_stream(peer)
+							# stream_peer_ssl.blocking_handshake = false
+							status_ssl = 2
+						'N':
+							status = Status.STATUS_ERROR
+							
+							push_error("[PostgreSQLClient:%d] The connection attempt failed. The backend does not want to establish a secure SSL/TLS connection." % [get_instance_id()])
+							
+							close(false)
+						var value:
+							status = Status.STATUS_ERROR
+							
+							push_error("[PostgreSQLClient:%d] The backend sent an unknown response to the request to establish a secure connection. Response is not recognized: '%c'." % [get_instance_id(), value])
+							
+							close(false)
+			else:
+				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
+		
+		if status == Status.STATUS_CONNECTED and busy:
 			var response: Array = [OK, PackedByteArray()]
 			
 			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
@@ -353,7 +352,7 @@ func poll() -> void:
 			status_ssl = 3
 		
 		
-		if status_ssl != 1 and status_ssl != 2 and not status == Status.STATUS_CONNECTED and client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+		if status_ssl != 1 and status_ssl != 2 and not status == Status.STATUS_CONNECTED:
 			var reponce: Array
 			
 			if status_ssl == 0:
