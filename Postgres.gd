@@ -111,7 +111,6 @@ func connect_to_host(url: String, secure_connection_method: SecureConnectionMeth
 	var result = regex.search(url)
 	
 	if result:
-		print(result.strings)
 		### StartupMessage ###
 		
 		# "postgres" is the database and user by default.
