@@ -439,7 +439,7 @@ static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteAr
 		length = hash_length
 	
 	var output := PackedByteArray()
-	var block_count := ceil(length / float(hash_length))
+	var block_count: int = ceil(length / float(hash_length))
 	
 	var buffer := PackedByteArray()
 	buffer.resize(4)
