@@ -1107,7 +1107,7 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 				# The message body consists of one or more identified fields, followed by a zero byte as a terminator.
 				# Fields can appear in any order. For each field there is the following:
 				for champ_data in split_pool_byte_array(response_buffer.slice(5, message_length), 0):
-					var champ: String = champ_data.get_string_from_ascii()
+					var champ: String = champ_data.get_string_from_utf8()
 					
 					# A code identifying the field type; if zero, this is the message terminator and no string follows.
 					var field_type_code := champ[0]
