@@ -50,6 +50,8 @@ https://github.com/Marzin-bot/PostgreSQLClient/issues/29
 
 PostgreSQLClient DOCUMENTATION (NOT FINALIZED):
 ====================================
+This documentation concerns the version of the module intended for Godot 3.
+If you work with Godot 4 Look in the <a href="https://github.com/Marzin-bot/PostgreSQLClient/tree/alpha">alpha branch</a>!
 
 **PROPERTIES:**
 
