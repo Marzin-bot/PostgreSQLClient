@@ -53,7 +53,7 @@ var user_global: String
 
 var client := StreamPeerTCP.new()
 var peerstream := PacketPeerStream.new()
-var stream_peer_ssl := StreamPeerSSL.new()
+var stream_peer_tls := StreamPeerTLS.new()
 
 var peer: StreamPeer
 func _init():
@@ -159,12 +159,12 @@ func close(clean_closure := true) -> void:
 		
 		# Identifies the message as a termination.
 		
-		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
+		if stream_peer_tls.get_status() == StreamPeerTLS.STATUS_HANDSHAKING or stream_peer_tls.get_status() == StreamPeerTLS.STATUS_CONNECTED:
 			# Deconnection ssl
 			if clean_closure:
-				stream_peer_ssl.put_data(request('X', PackedByteArray()))
+				stream_peer_tls.put_data(request('X', PackedByteArray()))
 			
-			stream_peer_ssl.disconnect_from_stream()
+			stream_peer_tls.disconnect_from_stream()
 		else:
 			if clean_closure:
 				peer.put_data(request('X', PackedByteArray()))
@@ -194,8 +194,8 @@ func execute(sql: String) -> int:
 		if not busy:
 			var request_result := request('Q', sql.to_utf8_buffer() + PackedByteArray([0]))
 			
-			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-				stream_peer_ssl.put_data(request_result)
+			if stream_peer_tls.get_status() == StreamPeerTLS.STATUS_CONNECTED:
+				stream_peer_tls.put_data(request_result)
 			else:
 				peer.put_data(request_result)
 			
@@ -212,7 +212,7 @@ func execute(sql: String) -> int:
 
 # Upgrade the connexion to SSL.
 func set_ssl_connection() -> void:
-	if stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == StreamPeerSSL.STATUS_CONNECTED:
+	if stream_peer_tls.get_status() == StreamPeerTLS.STATUS_HANDSHAKING or stream_peer_tls.get_status() == StreamPeerTLS.STATUS_CONNECTED:
 		push_warning("[PostgreSQLClient:%d] The connection is already secured with TLS/SSL." % [get_instance_id()])
 	elif client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 		### SSLRequest ###
@@ -291,8 +291,8 @@ func poll() -> void:
 	client.poll()
 	
 	if client.get_status() == StreamPeerTCP.STATUS_CONNECTED:
-		if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_HANDSHAKING or stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			stream_peer_ssl.poll()
+		if stream_peer_tls.get_status() == stream_peer_tls.STATUS_HANDSHAKING or stream_peer_tls.get_status() == stream_peer_tls.STATUS_CONNECTED:
+			stream_peer_tls.poll()
 		
 		if next_etape:
 			if secure_connection_method_buffer == SecureConnectionMethod.SSL:
@@ -314,8 +314,8 @@ func poll() -> void:
 							#var crypto = Crypto.new()
 							#var ssl_key = crypto.generate_rsa(4096)
 							#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
-							stream_peer_ssl.connect_to_stream(peer)
-							# stream_peer_ssl.blocking_handshake = false
+							stream_peer_tls.connect_to_stream(peer)
+							# stream_peer_tls.blocking_handshake = false
 							status_ssl = 2
 						'N':
 							status = Status.STATUS_ERROR
@@ -335,9 +335,9 @@ func poll() -> void:
 		if status == Status.STATUS_CONNECTED and busy:
 			var response: Array = [OK, PackedByteArray()]
 			
-			if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-				if stream_peer_ssl.get_available_bytes():
-					response = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes()) # I don't know why it crashes when this value (stream_peer_ssl.get_available_bytes()) is equal to 0 so I pass it a condition. It is probably a Godot bug.
+			if stream_peer_tls.get_status() == stream_peer_tls.STATUS_CONNECTED:
+				if stream_peer_tls.get_available_bytes():
+					response = stream_peer_tls.get_data(stream_peer_tls.get_available_bytes()) # I don't know why it crashes when this value (stream_peer_tls.get_available_bytes()) is equal to 0 so I pass it a condition. It is probably a Godot bug.
 			else:
 				response = peer.get_data(peer.get_available_bytes())
 			
@@ -347,8 +347,8 @@ func poll() -> void:
 				push_warning("[PostgreSQLClient:%d] The backend did not send any data or there must have been a problem while the backend sent a response to the request." % [get_instance_id()])
 		
 		
-		if status_ssl == 2 and stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-			stream_peer_ssl.put_data(startup_message)
+		if status_ssl == 2 and stream_peer_tls.get_status() == stream_peer_tls.STATUS_CONNECTED:
+			stream_peer_tls.put_data(startup_message)
 			
 			status_ssl = 3
 		
@@ -359,7 +359,7 @@ func poll() -> void:
 			if status_ssl == 0:
 				reponce = peer.get_data(peer.get_available_bytes())
 			else:
-				reponce = stream_peer_ssl.get_data(stream_peer_ssl.get_available_bytes())
+				reponce = stream_peer_tls.get_data(stream_peer_tls.get_available_bytes())
 			
 			if reponce[0] == OK and reponce[1].size():
 				var servire = reponce_parser(reponce[1])
@@ -368,7 +368,7 @@ func poll() -> void:
 					if status_ssl == 0:
 						peer.put_data(servire)
 					else:
-						stream_peer_ssl.put_data(servire)
+						stream_peer_tls.put_data(servire)
 
 
 func request(type_message: String, message := PackedByteArray()) -> PackedByteArray:
@@ -1467,8 +1467,8 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 									
 									var sasl_initial_response := request('p', "SCRAM-SHA-256".to_ascii_buffer() + PackedByteArray([0]) + len_client_first_message + client_first_message.to_utf8_buffer())
 									
-									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-										stream_peer_ssl.put_data(sasl_initial_response)
+									if stream_peer_tls.get_status() == StreamPeerTLS.STATUS_CONNECTED:
+										stream_peer_tls.put_data(sasl_initial_response)
 									else:
 										peer.put_data(sasl_initial_response)
 									
@@ -1493,8 +1493,8 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 									
 									var sasl_initial_response := request('p', "SCRAM-SHA-256-PLUS".to_ascii_buffer() + PackedByteArray([0]) + len_client_first_message + client_first_message.to_utf8_buffer())
 									
-									if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-										stream_peer_ssl.put_data(sasl_initial_response)
+									if stream_peer_tls.get_status() == StreamPeerTLS.STATUS_CONNECTED:
+										stream_peer_tls.put_data(sasl_initial_response)
 									else:
 										peer.put_data(sasl_initial_response)
 									
@@ -1563,8 +1563,8 @@ func reponce_parser(fragmented_answer: PackedByteArray):
 						
 						var authentication_sasl_continue := request('p', client_final_message.to_ascii_buffer())
 						
-						if stream_peer_ssl.get_status() == stream_peer_ssl.STATUS_CONNECTED:
-							stream_peer_ssl.put_data(authentication_sasl_continue)
+						if stream_peer_tls.get_status() == stream_peer_tls.STATUS_CONNECTED:
+							stream_peer_tls.put_data(authentication_sasl_continue)
 						else:
 							peer.put_data(authentication_sasl_continue)
 					12:
