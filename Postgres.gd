@@ -224,7 +224,7 @@ func set_ssl_connection() -> void:
 		
 		# The SSL request code.
 		# The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits. (To avoid confusion, this code must not be the same as any protocol version number.)
-		buffer.put_data(get_32byte_reverse(80877103))
+		buffer.put_data(self.get_32byte_reverse(80877103))
 		
 		peer.put_data(buffer.data_array)
 		
@@ -314,7 +314,7 @@ func poll() -> void:
 							#var crypto = Crypto.new()
 							#var ssl_key = crypto.generate_rsa(4096)
 							#var ssl_cert = crypto.generate_self_signed_certificate(ssl_key)
-							stream_peer_tls.connect_to_stream(peer)
+							stream_peer_tls.connect_to_stream(peer, "")
 							# stream_peer_tls.blocking_handshake = false
 							status_ssl = 2
 						'N':
@@ -403,7 +403,7 @@ func request(type_message: String, message := PackedByteArray()) -> PackedByteAr
 	return buffer.data_array.slice(4)
 
 
-static func get_32byte_reverse(integer: int, unsigned := false) -> PackedByteArray:
+func get_32byte_reverse(integer: int, unsigned := false) -> PackedByteArray:
 	var buffer := StreamPeerBuffer.new()
 	
 	if unsigned:
@@ -417,7 +417,7 @@ static func get_32byte_reverse(integer: int, unsigned := false) -> PackedByteArr
 	return bytes
 
 
-static func split_pool_byte_array(pool_byte_array: PackedByteArray, delimiter: int) -> Array:
+func split_pool_byte_array(pool_byte_array: PackedByteArray, delimiter: int) -> Array:
 	var array := []
 	var from := 0
 	var to := 0
@@ -432,7 +432,7 @@ static func split_pool_byte_array(pool_byte_array: PackedByteArray, delimiter: i
 	return array
 
 
-static func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteArray, iterations := 4096, length := 0) -> PackedByteArray:
+func pbkdf2(hash_type: int, password: PackedByteArray, salt: PackedByteArray, iterations := 4096, length := 0) -> PackedByteArray:
 	var crypto := Crypto.new()
 	var hash_length := len(crypto.hmac_digest(hash_type, salt, password))
 	if length == 0:
